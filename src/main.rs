@@ -1,15 +1,25 @@
+use clap::{Parser, Subcommand};
 use std::path::Path;
+use std::io;
 use std::fs;
 
 fn main() {
     let cli = NyxCli::parse();
     
     match &cli.command {
-        Some(NyxCommands::Init) => {
-            println!("Initializing nyx repo...");
-            init().unwrap();
+        Some(command) => {
+            match command {
+                NyxCommand::Init => {
+                    println!("Initializing nyx repo...");
+                    init().unwrap();
+                },
+                NyxCommand::HashObject => {
+                    println!("Not implemented yet!");
+                },
+                _ => ()
+            }
         },
-        _ => println!("Unknown command!"),
+        None => println!("Unknown command!"),
     }
 }
 
@@ -27,24 +37,24 @@ enum NyxError {
     IOError(std::io::Error),
 }
 
-impl From<std::io::Error> for NyxError {
-   fn from(err: std::io::Error) -> Self {
+impl From<io::Error> for NyxError {
+   fn from(err: io::Error) -> Self {
       NyxError::IOError(err) 
    } 
 }
-
-use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct NyxCli {
     #[clap(subcommand)]
-    command: Option<NyxCommands>,
+    command: Option<NyxCommand>,
 }
 
 #[derive(Subcommand)]
-enum NyxCommands {
+enum NyxCommand {
     Init,
     Add,
     Commit,
+    // ####### LOW-LEVEL COMMANDS #######
+    HashObject,
 }
