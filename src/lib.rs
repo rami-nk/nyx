@@ -36,9 +36,7 @@ pub fn init() -> Result<(), NyxError> {
 }
 
 pub fn hash_object(path: &str) -> Result<(), NyxError> {
-    let objects_path = Path::new(".nyx").join("objects");
-    
-    if !objects_path.exists() {
+    if !Path::new(".nyx").join("objects").exists() {
         panic!("You are not in a nyx repo!");
     }
 
@@ -48,7 +46,8 @@ pub fn hash_object(path: &str) -> Result<(), NyxError> {
     let content_str = std::str::from_utf8(&buffer)?.trim();
 
     // Todo: Currently only blob types are supported
-    let sha1 = calculate_sha1(content_str, NyxObjectType::Blob);
+    let content = concat_content(content_str, NyxObjectType::Blob);
+    let sha1 = calculate_sha1(&content);
     
     let object_dir = &sha1[..2];
     let object_file = &sha1[2..];
@@ -60,24 +59,26 @@ pub fn hash_object(path: &str) -> Result<(), NyxError> {
     if !object_dir_path.exists() { fs::create_dir(&object_dir_path)?; }
 
     let mut file = fs::File::create(object_dir_path.join(&object_file))?;
+
     // TODO: compress content
-    file.write(&buffer)?;
+    file.write(content.as_bytes())?;
     
     println!("{sha1}");
 
     Ok(())
 }
 
-fn calculate_sha1(content: &str, object_type: NyxObjectType) -> String {
+fn calculate_sha1(content: &str) -> String {
     let mut hasher = Sha1::new();
-    
-    let content = format!("{} {}\0{}",
-         object_type.to_string().to_lowercase(),
-         &content.as_bytes().len().to_string(),
-         content);
-
     hasher.update(content);
     hex::encode(hasher.finalize())
+}
+
+fn concat_content(content: &str, object_type: NyxObjectType) -> String {
+    format!("{} {}\0{}",
+         object_type.to_string().to_lowercase(),
+         &content.as_bytes().len().to_string(),
+         content)
 }
 
 #[derive(Debug)]
