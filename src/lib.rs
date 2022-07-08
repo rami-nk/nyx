@@ -4,6 +4,8 @@ use sha1::{Digest, Sha1};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::{fmt, fs, str};
+use flate2::Compression;
+use flate2::write::ZlibEncoder; 
 
 mod errors;
 use errors::NyxError;
@@ -58,8 +60,11 @@ pub fn hash_object(path: &str) -> Result<(), NyxError> {
 
     let mut file = fs::File::create(object_dir_path.join(&object_file))?;
 
-    // TODO: compress content
-    file.write(content.as_bytes())?;
+    let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
+    e.write_all(content.as_bytes())?;
+    let compressed_bytes = e.finish()?;
+
+    file.write(&compressed_bytes)?;
 
     println!("{sha1}");
 
