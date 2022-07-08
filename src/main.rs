@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
+use std::io::Read;
 use std::path::Path;
-use std::io;
-use std::fs;
+use std::{io, fs, str};
 
 fn main() {
     let cli = NyxCli::parse();
@@ -13,8 +13,8 @@ fn main() {
                     println!("Initializing nyx repo...");
                     init().unwrap();
                 },
-                NyxCommand::HashObject => {
-                    println!("Not implemented yet!");
+                NyxCommand::HashObject { path } => {
+                    hash_object(path).unwrap();
                 },
                 _ => ()
             }
@@ -32,14 +32,30 @@ fn init() -> Result<(), NyxError> {
     Ok(())
 }
 
+fn hash_object(path: &String) -> Result<(), NyxError> {
+    let mut buffer = Vec::new();
+    let mut file = fs::File::open(path)?;
+    file.read_to_end(&mut buffer)?;
+    let content_str = std::str::from_utf8(&buffer)?.trim();
+    println!("You entered the following input: {content_str:?}");
+    Ok(())
+}
+
 #[derive(Debug)]
 enum NyxError {
-    IOError(std::io::Error),
+    IoError(std::io::Error),
+    Utf8Error(str::Utf8Error),
 }
 
 impl From<io::Error> for NyxError {
    fn from(err: io::Error) -> Self {
-      NyxError::IOError(err) 
+      NyxError::IoError(err) 
+   } 
+}
+
+impl From<str::Utf8Error> for NyxError {
+   fn from(err: str::Utf8Error) -> Self {
+      NyxError::Utf8Error(err) 
    } 
 }
 
@@ -56,5 +72,8 @@ enum NyxCommand {
     Add,
     Commit,
     // ####### LOW-LEVEL COMMANDS #######
-    HashObject,
+    HashObject {
+        #[clap(value_parser)]
+        path: String,
+    },
 }
