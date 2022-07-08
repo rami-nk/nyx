@@ -1,6 +1,7 @@
-use clap::{Parser, Subcommand};
 use std::io::Read;
 use std::path::Path;
+use clap::{Parser, Subcommand};
+use core::panic;
 use std::{io, fs, str, fmt};
 use sha1::{Sha1, Digest};
 
@@ -34,16 +35,35 @@ fn init() -> Result<(), NyxError> {
 }
 
 fn hash_object(path: &str) -> Result<(), NyxError> {
+    let objects_path = Path::new(".nyx").join("objects");
+    
+    if !objects_path.exists() {
+        panic!("You are not in a nyx repo!");
+    }
+
     let mut buffer = Vec::new();
     let mut file = fs::File::open(path)?;
     file.read_to_end(&mut buffer)?;
     let content_str = std::str::from_utf8(&buffer)?.trim();
+
+    // Todo: Currently only blob types are supported
     let sha1 = calculate_sha1(content_str, NyxObjectType::Blob);
-    println!("SHA1: {sha1:x?}");
+    
+    let object_dir = &sha1[..2];
+    let object_file = &sha1[2..];
+    
+    let object_dir_path = Path::new(".nyx")
+                                        .join("objects")
+                                        .join(&object_dir);
+    
+    if !object_dir_path.exists() { fs::create_dir(&object_dir_path)?; }
+
+    fs::File::create(object_dir_path.join(&object_file))?;
+
     Ok(())
 }
 
-fn calculate_sha1(content: &str, object_type: NyxObjectType) -> [u8; 20] {
+fn calculate_sha1(content: &str, object_type: NyxObjectType) -> String {
     let mut hasher = Sha1::new();
     
     let content = format!("{} {}\0{}",
@@ -52,7 +72,7 @@ fn calculate_sha1(content: &str, object_type: NyxObjectType) -> [u8; 20] {
          content);
 
     hasher.update(content);
-    (&hasher.finalize()[..]).try_into().unwrap()
+    hex::encode(hasher.finalize())
 }
 
 #[derive(Debug)]
