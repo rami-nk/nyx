@@ -1,26 +1,24 @@
+use clap::{Parser, Subcommand};
+use core::panic;
+use sha1::{Digest, Sha1};
 use std::io::{Read, Write};
 use std::path::Path;
-use core::panic;
-use std::{fs, str, fmt};
-use sha1::{Sha1, Digest};
-use clap::{Parser, Subcommand};
+use std::{fmt, fs, str};
 
 mod errors;
 use errors::NyxError;
 
 pub fn run(cli: NyxCli) {
     match &cli.command {
-        Some(command) => {
-            match command {
-                NyxCommand::Init => {
-                    println!("Initializing nyx repo...");
-                    init().unwrap();
-                },
-                NyxCommand::HashObject { path } => {
-                    hash_object(path).unwrap();
-                },
-                _ => ()
+        Some(command) => match command {
+            NyxCommand::Init => {
+                println!("Initializing nyx repo...");
+                init().unwrap();
             }
+            NyxCommand::HashObject { path } => {
+                hash_object(path).unwrap();
+            }
+            _ => (),
         },
         None => println!("Unknown command!"),
     };
@@ -48,21 +46,21 @@ pub fn hash_object(path: &str) -> Result<(), NyxError> {
     // Todo: Currently only blob types are supported
     let content = concat_content(content_str, NyxObjectType::Blob);
     let sha1 = calculate_sha1(&content);
-    
+
     let object_dir = &sha1[..2];
     let object_file = &sha1[2..];
-    
-    let object_dir_path = Path::new(".nyx")
-                                        .join("objects")
-                                        .join(&object_dir);
-    
-    if !object_dir_path.exists() { fs::create_dir(&object_dir_path)?; }
+
+    let object_dir_path = Path::new(".nyx").join("objects").join(&object_dir);
+
+    if !object_dir_path.exists() {
+        fs::create_dir(&object_dir_path)?;
+    }
 
     let mut file = fs::File::create(object_dir_path.join(&object_file))?;
 
     // TODO: compress content
     file.write(content.as_bytes())?;
-    
+
     println!("{sha1}");
 
     Ok(())
@@ -75,16 +73,20 @@ fn calculate_sha1(content: &str) -> String {
 }
 
 fn concat_content(content: &str, object_type: NyxObjectType) -> String {
-    format!("{} {}\0{}",
-         object_type.to_string().to_lowercase(),
-         &content.as_bytes().len().to_string(),
-         content)
+    format!(
+        "{} {}\0{}",
+        object_type.to_string().to_lowercase(),
+        &content.as_bytes().len().to_string(),
+        content
+    )
 }
 
 #[derive(Debug)]
 pub enum NyxObjectType {
     Commit,
-    Tree, Blob, }
+    Tree,
+    Blob,
+}
 
 impl fmt::Display for NyxObjectType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
