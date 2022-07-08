@@ -1,4 +1,4 @@
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::Path;
 use clap::{Parser, Subcommand};
 use core::panic;
@@ -58,7 +58,10 @@ fn hash_object(path: &str) -> Result<(), NyxError> {
     
     if !object_dir_path.exists() { fs::create_dir(&object_dir_path)?; }
 
-    fs::File::create(object_dir_path.join(&object_file))?;
+    let mut file = fs::File::create(object_dir_path.join(&object_file))?;
+    file.write(&buffer)?;
+    
+    println!("{sha1}");
 
     Ok(())
 }
