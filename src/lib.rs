@@ -7,6 +7,7 @@ use flate2::Compression;
 use flate2::write::ZlibEncoder; 
 use flate2::write::ZlibDecoder; 
 use std::fs::OpenOptions;
+use format_bytes::format_bytes;
 
 mod errors;
 use errors::NyxError;
@@ -104,12 +105,17 @@ fn cat_file(hash: &str) -> Result<(), NyxError> {
 fn add(file_path: &str) -> Result<(), NyxError> {
     let mut file = OpenOptions::new()
     .append(true)
+    .create(true)
     .open([".nyx", "index"].iter().collect::<PathBuf>())?;
     
-    let mut content = fs::read_to_string(PathBuf::from(file_path))?;
-    //let sha1 = calculate_sha1(&content);
-//    let content = format!("{} {}\n", &sha1, &file_path);
-//    file.write();
+    hash_object(&file_path)?;
+    
+    let content = fs::read(PathBuf::from(file_path))?;
+    let sha1 = calculate_sha1(&content);
+    
+    let content = format!("{} {} ", sha1, &file_path);
+    let compressed_bytes = zlib_compress(content.as_bytes())?;
+    file.write(&compressed_bytes)?;
 
     Ok(())
 }
@@ -123,7 +129,7 @@ fn calculate_sha1(content: &[u8]) -> String {
 fn append_object_header(content: &[u8], object_type: NyxObjectType) -> Vec<u8> {
     let object_type_bytes = object_type.to_string().to_lowercase().as_bytes().to_vec();
     let content_len_bytes = content.len().to_string().as_bytes().to_vec();
-    format_bytes::format_bytes!(b"{} {}\0{}", object_type_bytes, content_len_bytes, content)
+    format_bytes!(b"{} {}\0{}", object_type_bytes, content_len_bytes, content)
 }
 
 #[derive(Debug)]
