@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use core::panic;
 use sha1::{Digest, Sha1};
 use std::io::{Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::{fmt, fs, str};
 use flate2::Compression;
 use flate2::write::ZlibEncoder; 
@@ -52,7 +52,7 @@ pub fn hash_object(path: &str) -> Result<(), NyxError> {
     let object_dir = &sha1[..2];
     let object_file = &sha1[2..];
 
-    let object_dir_path = Path::new(".nyx").join("objects").join(&object_dir);
+    let object_dir_path: PathBuf = [".nyx", "objects", &object_dir].iter().collect();
 
     if !object_dir_path.exists() {
         fs::create_dir(&object_dir_path)?;
@@ -73,10 +73,7 @@ pub fn hash_object(path: &str) -> Result<(), NyxError> {
 
 fn cat_file(hash: &str) {
     // TODO: In every directory callable
-    let path = Path::new(".nyx")
-                            .join("objects")
-                            .join(&hash[..2])
-                            .join(&hash[2..]);
+    let path: PathBuf = [".nyx", "objects", &hash[..2], &hash[2..]].iter().collect();
     // TODO: Error Handling
     let mut file = fs::File::open(path).unwrap();
     let mut content: Vec<u8> = Vec::new();
