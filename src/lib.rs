@@ -6,6 +6,7 @@ use std::path::Path;
 use std::{fmt, fs, str};
 use flate2::Compression;
 use flate2::write::ZlibEncoder; 
+use flate2::write::ZlibDecoder; 
 
 mod errors;
 use errors::NyxError;
@@ -17,9 +18,8 @@ pub fn run(cli: NyxCli) {
                 println!("Initializing nyx repo...");
                 init().unwrap();
             }
-            NyxCommand::HashObject { path } => {
-                hash_object(path).unwrap();
-            }
+            NyxCommand::HashObject { path } => hash_object(path).unwrap(),
+            NyxCommand::CatFile { hash } => cat_file(hash),
             _ => (),
         },
         None => println!("Unknown command!"),
@@ -60,15 +60,40 @@ pub fn hash_object(path: &str) -> Result<(), NyxError> {
 
     let mut file = fs::File::create(object_dir_path.join(&object_file))?;
 
-    let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
-    e.write_all(content.as_bytes())?;
-    let compressed_bytes = e.finish()?;
+    let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+    encoder.write_all(content.as_bytes())?;
+    let compressed_bytes = encoder.finish()?;
 
     file.write(&compressed_bytes)?;
 
     println!("{sha1}");
 
     Ok(())
+}
+
+fn cat_file(hash: &str) {
+    // TODO: In every directory callable
+    let path = Path::new(".nyx")
+                            .join("objects")
+                            .join(&hash[..2])
+                            .join(&hash[2..]);
+    // TODO: Error Handling
+    let mut file = fs::File::open(path).unwrap();
+    let mut content: Vec<u8> = Vec::new();
+    file.read_to_end(&mut content).expect("Could not read content!");
+
+    let mut writer = Vec::new();
+    let mut decoder = ZlibDecoder::new(writer);
+    decoder.write_all(&content[..]).expect("Could not write compressed bytes!");
+    writer = decoder.finish().unwrap();
+    
+    // Remove header
+    let index = writer.iter().position(|x| *x == 0).unwrap();
+    writer = (&writer[index..]).to_vec();
+
+    let decompressed = String::from_utf8(writer)
+    .expect("Could not convert byte array to utf-8 String!");
+    println!("{}", decompressed); 
 }
 
 fn calculate_sha1(content: &str) -> String {
@@ -119,5 +144,9 @@ pub enum NyxCommand {
     HashObject {
         #[clap(value_parser)]
         path: String,
+    },
+    CatFile {
+        #[clap(value_parser)]
+        hash: String,
     },
 }
