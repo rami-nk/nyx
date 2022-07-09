@@ -44,25 +44,13 @@ pub fn hash_object(path: &str) -> Result<String, NyxError> {
         panic!("Not in a nyx repository");
     }
 
-    let mut content = fs::read(PathBuf::from(path))?;
+    let content = fs::read(PathBuf::from(path))?;
 
-    content = append_object_header(&content, NyxObjectType::Blob);
-    let sha1 = calculate_sha1(&content);
+    let object_hash = generate_object(&content, NyxObjectType::Blob);
 
-    let object_dir = &sha1[..2];
-    let object_file = &sha1[2..];
+    println!("{object_hash}");
 
-    let object_dir_path: PathBuf = [".nyx", "objects", &object_dir].iter().collect();
-
-    if !object_dir_path.exists() {
-        fs::create_dir(&object_dir_path)?;
-    }
-
-    fs::write(object_dir_path.join(&object_file), &content)?;
-
-    println!("{sha1}");
-
-    Ok(sha1)
+    Ok(object_hash)
 }
 
 fn cat_file(hash: &str) -> Result<(), NyxError> {
@@ -120,33 +108,29 @@ fn commit() {
     // TODO: handle file in directory (build trees)
     let index_content = fs::read_to_string(index_file).unwrap();
     
-    let content = append_object_header(index_content.as_bytes(), NyxObjectType::Tree);
-    let tree_sha1 = calculate_sha1(&content);
-    
-    let object_dir_path: PathBuf = [".nyx", "objects", &tree_sha1[..2]].iter().collect();
-
-    if !object_dir_path.exists() {
-        fs::create_dir(&object_dir_path).unwrap();
-    }
-
-    fs::write(object_dir_path.join(&tree_sha1[2..]), &content).unwrap();
+    let tree_hash = generate_object(index_content.as_bytes(), NyxObjectType::Tree);
     
     // TODO: Add parent section referencing last commit
     // Generate Commit Object
-    let commit_content = format!("tree {}", tree_sha1);
-    let commit_content = append_object_header(commit_content.as_bytes(), NyxObjectType::Commit);
-    let commit_sha1 = calculate_sha1(&commit_content);
+    let commit_content = format!("tree {}", tree_hash);
+    let commit_hash = generate_object(commit_content.as_bytes(), NyxObjectType::Commit);
+
+    // Write current commit's hash to track head
+    fs::write([".nyx", "head"].iter().collect::<PathBuf>(), &commit_hash).unwrap();
+}
+
+fn generate_object(content: &[u8], object_type: NyxObjectType) -> String {
+    let content = append_object_header(content, object_type);
+    let hash = calculate_sha1(&content);
     
-    let object_dir_path: PathBuf = [".nyx", "objects", &commit_sha1[..2]].iter().collect();
+    let object_dir_path: PathBuf = [".nyx", "objects", &hash[..2]].iter().collect();
 
     if !object_dir_path.exists() {
         fs::create_dir(&object_dir_path).unwrap();
     }
 
-    fs::write(object_dir_path.join(&commit_sha1[2..]), &commit_content).unwrap();
-    
-    // Write current commit's hash to track head
-    fs::write([".nyx", "head"].iter().collect::<PathBuf>(), &commit_sha1).unwrap();
+    fs::write(object_dir_path.join(&hash[2..]), &content).unwrap();
+    hash
 }
 
 fn calculate_sha1(content: &[u8]) -> String {
