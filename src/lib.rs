@@ -88,26 +88,28 @@ fn add(file_path: &str) -> Result<(), NyxError> {
 
     let mut file = OpenOptions::new()
     .create(true)
-    .write(true)
+    .append(true)
     .read(true)
     .open(index_path)?;
     
     let sha1 = hash_object(&file_path)?;
     
-    let mut content = Vec::new();
-    file.read_to_end(&mut content).unwrap();
+    let mut content = String::new();
+    file.read_to_string(&mut content).unwrap();
+    
+    if content.contains(&sha1) {
+        return Ok(());
+    }
 
-    let content = format_bytes!(b"{}\n{} {}", &content, sha1.as_bytes(), file_path.as_bytes());
-    println!("Index content after add: {}", String::from_utf8(content.clone()).unwrap());
-    file.write(&content)?;
+    let content = format!("{} {}\n", &sha1, &file_path);
+    file.write(content.as_bytes())?;
 
     Ok(())
 }
 
 fn ls_file() {
     let path = [".nyx", "index"].iter().collect::<PathBuf>();   
-    let content = fs::read(path).unwrap();
-    let content = str::from_utf8(&content).unwrap();
+    let content = fs::read_to_string(path).unwrap();
     println!("{content}");
 }
 
