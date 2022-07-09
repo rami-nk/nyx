@@ -2,8 +2,8 @@
 use clap::{Parser, Subcommand};
 use core::panic;
 use sha1::{Digest, Sha1};
-use std::{io::{Write}, path::{Path, PathBuf}};
-use std::{fmt, fs, str};
+use std::path::{Path, PathBuf};
+use std::{fmt, fs, str}; 
 use format_bytes::format_bytes;
 
 mod errors;
@@ -21,7 +21,7 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
             NyxCommand::CatFile { hash } => cat_file(hash)?,
             NyxCommand::Add { file_path } => add(file_path)?,
             NyxCommand::LsFile => ls_file(),
-            _ => (),
+            NyxCommand::Commit => commit(),
         },
         None => println!("Unknown command!"),
     };
@@ -58,9 +58,7 @@ pub fn hash_object(path: &str) -> Result<String, NyxError> {
         fs::create_dir(&object_dir_path)?;
     }
 
-    let mut file = fs::File::create(object_dir_path.join(&object_file))?;
-
-    file.write(&content)?;
+    fs::write(object_dir_path.join(&object_file), &content)?;
 
     println!("{sha1}");
 
@@ -109,6 +107,43 @@ fn ls_file() {
     let path = [".nyx", "index"].iter().collect::<PathBuf>();   
     let content = fs::read_to_string(path).unwrap();
     println!("{content}");
+}
+
+fn commit() {
+    let index_file = [".nyx", "index"].iter().collect::<PathBuf>();   
+    
+    if !index_file.exists() {
+        panic!("Noting to commit.");
+    }
+    
+    // Generate Tree Object (currently only a single one)
+    // TODO: handle file in directory (build trees)
+    let index_content = fs::read_to_string(index_file).unwrap();
+    
+    let content = append_object_header(index_content.as_bytes(), NyxObjectType::Tree);
+    let tree_sha1 = calculate_sha1(&content);
+    
+    let object_dir_path: PathBuf = [".nyx", "objects", &tree_sha1[..2]].iter().collect();
+
+    if !object_dir_path.exists() {
+        fs::create_dir(&object_dir_path).unwrap();
+    }
+
+    fs::write(object_dir_path.join(&tree_sha1[2..]), &content).unwrap();
+    
+    // TODO: Add parent section referencing last commit
+    // Generate Commit Object
+    let commit_content = format!("tree {}", tree_sha1);
+    let commit_content = append_object_header(commit_content.as_bytes(), NyxObjectType::Commit);
+    let commit_sha1 = calculate_sha1(&commit_content);
+    
+    let object_dir_path: PathBuf = [".nyx", "objects", &commit_sha1[..2]].iter().collect();
+
+    if !object_dir_path.exists() {
+        fs::create_dir(&object_dir_path).unwrap();
+    }
+
+    fs::write(object_dir_path.join(&commit_sha1[2..]), &commit_content).unwrap();
 }
 
 fn calculate_sha1(content: &[u8]) -> String {
