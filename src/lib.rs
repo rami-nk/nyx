@@ -36,17 +36,16 @@ pub fn init() -> Result<(), NyxError> {
 }
 
 pub fn hash_object(path: &str) -> Result<(), NyxError> {
+    // TODO: Should be callable from all dirs within the repo
     if !Path::new(".nyx").join("objects").exists() {
         panic!("You are not in a nyx repo!");
     }
 
-    let mut buffer = Vec::new();
-    let mut file = fs::File::open(path)?;
-    file.read_to_end(&mut buffer)?;
-    let content_str = std::str::from_utf8(&buffer)?.trim();
+    let mut content = fs::read_to_string(PathBuf::from(path))
+                                            .expect("Unable to read file");
 
     // Todo: Currently only blob types are supported
-    let content = concat_content(content_str, NyxObjectType::Blob);
+    content = append_object_header(&content, NyxObjectType::Blob);
     let sha1 = calculate_sha1(&content);
 
     let object_dir = &sha1[..2];
@@ -74,7 +73,9 @@ pub fn hash_object(path: &str) -> Result<(), NyxError> {
 fn cat_file(hash: &str) {
     // TODO: In every directory callable
     let path: PathBuf = [".nyx", "objects", &hash[..2], &hash[2..]].iter().collect();
+
     // TODO: Error Handling
+    //let mut content = fs::read_to_string(path);
     let mut file = fs::File::open(path).unwrap();
     let mut content: Vec<u8> = Vec::new();
     file.read_to_end(&mut content).expect("Could not read content!");
@@ -99,7 +100,7 @@ fn calculate_sha1(content: &str) -> String {
     hex::encode(hasher.finalize())
 }
 
-fn concat_content(content: &str, object_type: NyxObjectType) -> String {
+fn append_object_header(content: &str, object_type: NyxObjectType) -> String {
     format!(
         "{} {}\0{}",
         object_type.to_string().to_lowercase(),
