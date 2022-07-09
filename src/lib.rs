@@ -1,8 +1,7 @@
 use clap::{Parser, Subcommand};
 use core::panic;
 use sha1::{Digest, Sha1};
-use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::{io::Write, path::{Path, PathBuf}};
 use std::{fmt, fs, str};
 use flate2::Compression;
 use flate2::write::ZlibEncoder; 
@@ -38,11 +37,11 @@ pub fn init() -> Result<(), NyxError> {
 pub fn hash_object(path: &str) -> Result<(), NyxError> {
     // TODO: Should be callable from all dirs within the repo
     if !Path::new(".nyx").join("objects").exists() {
-        panic!("You are not in a nyx repo!");
+        // TODO: logging concept
+        panic!("Not in a nyx repository");
     }
 
-    let mut content = fs::read_to_string(PathBuf::from(path))
-                                            .expect("Unable to read file");
+    let mut content = fs::read_to_string(PathBuf::from(path)).expect("Unable to read file");
 
     // Todo: Currently only blob types are supported
     content = append_object_header(&content, NyxObjectType::Blob);
@@ -74,23 +73,18 @@ fn cat_file(hash: &str) {
     // TODO: In every directory callable
     let path: PathBuf = [".nyx", "objects", &hash[..2], &hash[2..]].iter().collect();
 
-    // TODO: Error Handling
-    //let mut content = fs::read_to_string(path);
-    let mut file = fs::File::open(path).unwrap();
-    let mut content: Vec<u8> = Vec::new();
-    file.read_to_end(&mut content).expect("Could not read content!");
+    let content = fs::read(path).expect("Unable to read file");
 
     let mut writer = Vec::new();
     let mut decoder = ZlibDecoder::new(writer);
-    decoder.write_all(&content[..]).expect("Could not write compressed bytes!");
+    decoder.write_all(&content[..]).expect("Unable to write content");
     writer = decoder.finish().unwrap();
     
     // Remove header
     let index = writer.iter().position(|x| *x == 0).unwrap();
     writer = (&writer[index..]).to_vec();
 
-    let decompressed = String::from_utf8(writer)
-    .expect("Could not convert byte array to utf-8 String!");
+    let decompressed = String::from_utf8(writer).expect("Unable to parse bytes");
     println!("{}", decompressed); 
 }
 
