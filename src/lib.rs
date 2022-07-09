@@ -45,9 +45,8 @@ pub fn hash_object(path: &str) -> Result<(), NyxError> {
         panic!("Not in a nyx repository");
     }
 
-    let mut content = fs::read_to_string(PathBuf::from(path)).expect("Unable to read file");
+    let mut content = fs::read(PathBuf::from(path))?;
 
-    // Todo: Currently only blob types are supported
     content = append_object_header(&content, NyxObjectType::Blob);
     let sha1 = calculate_sha1(&content);
 
@@ -63,9 +62,6 @@ pub fn hash_object(path: &str) -> Result<(), NyxError> {
     let mut file = fs::File::create(object_dir_path.join(&object_file))?;
 
     let compressed_bytes = zlib_compress(&content)?;
-    //let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
-    //encoder.write_all(content.as_bytes())?;
-    //let compressed_bytes = encoder.finish()?;
 
     file.write(&compressed_bytes)?;
 
@@ -74,10 +70,9 @@ pub fn hash_object(path: &str) -> Result<(), NyxError> {
     Ok(())
 }
 
-// TODO: Change api of zlib_compress to accept a byte slice
-fn zlib_compress(content: &str) -> Result<Vec<u8>, NyxError> {
+fn zlib_compress(content: &[u8]) -> Result<Vec<u8>, NyxError> {
    let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default()); 
-   encoder.write_all(content.as_bytes())?;
+   encoder.write_all(content)?;
    let compressed_bytes = encoder.finish()?;
    Ok(compressed_bytes)
 }
@@ -93,7 +88,6 @@ fn zlib_decompress(content: &[u8]) -> Result<Vec<u8>, NyxError> {
 fn cat_file(hash: &str) -> Result<(), NyxError> {
     // TODO: In every directory callable
     let path: PathBuf = [".nyx", "objects", &hash[..2], &hash[2..]].iter().collect();
-
     let content = fs::read(path)?;
 
     let decompressed_bytes = zlib_decompress(&content)?;
@@ -108,33 +102,28 @@ fn cat_file(hash: &str) -> Result<(), NyxError> {
 }
 
 fn add(file_path: &str) -> Result<(), NyxError> {
-    // let mut appender = FileAccessor::Appender(path);
-    // appender.append(b"asdfasdf");
     let mut file = OpenOptions::new()
     .append(true)
     .open([".nyx", "index"].iter().collect::<PathBuf>())?;
     
     let mut content = fs::read_to_string(PathBuf::from(file_path))?;
-    let sha1 = calculate_sha1(&content);
-    let content = format!("{} {}\n", &sha1, &file_path);
+    //let sha1 = calculate_sha1(&content);
+//    let content = format!("{} {}\n", &sha1, &file_path);
 //    file.write();
 
     Ok(())
 }
 
-fn calculate_sha1(content: &str) -> String {
+fn calculate_sha1(content: &[u8]) -> String {
     let mut hasher = Sha1::new();
     hasher.update(content);
     hex::encode(hasher.finalize())
 }
 
-fn append_object_header(content: &str, object_type: NyxObjectType) -> String {
-    format!(
-        "{} {}\0{}",
-        object_type.to_string().to_lowercase(),
-        &content.as_bytes().len().to_string(),
-        content
-    )
+fn append_object_header(content: &[u8], object_type: NyxObjectType) -> Vec<u8> {
+    let object_type_bytes = object_type.to_string().to_lowercase().as_bytes().to_vec();
+    let content_len_bytes = content.len().to_string().as_bytes().to_vec();
+    format_bytes::format_bytes!(b"{} {}\0{}", object_type_bytes, content_len_bytes, content)
 }
 
 #[derive(Debug)]
