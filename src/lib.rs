@@ -1,9 +1,9 @@
+#![feature(drain_filter)]
 use clap::{Parser, Subcommand};
 use core::panic;
 use sha1::{Digest, Sha1};
-use std::{io::{Write, Read}, path::{Path, PathBuf}};
+use std::{io::{Write}, path::{Path, PathBuf}};
 use std::{fmt, fs, str};
-use std::fs::OpenOptions;
 use format_bytes::format_bytes;
 
 mod errors;
@@ -83,26 +83,24 @@ fn cat_file(hash: &str) -> Result<(), NyxError> {
 }
 
 fn add(file_path: &str) -> Result<(), NyxError> {
-    // TODO: Check if same file with same hash and same file with different hash
     let index_path = [".nyx", "index"].iter().collect::<PathBuf>();
-
-    let mut file = OpenOptions::new()
-    .create(true)
-    .append(true)
-    .read(true)
-    .open(index_path)?;
     
     let sha1 = hash_object(&file_path)?;
     
     let mut content = String::new();
-    file.read_to_string(&mut content).unwrap();
+    if index_path.exists() {
+        content = fs::read_to_string(&index_path)?;
+    }
     
     if content.contains(&sha1) {
         return Ok(());
     }
+    
+    let mut content: Vec<&str> = content.split("\n").collect();
+    content.drain_filter(|line| line.contains(&file_path));
 
-    let content = format!("{} {}\n", &sha1, &file_path);
-    file.write(content.as_bytes())?;
+    let content = format!("{}\n{} {}", content.join(""), &sha1, &file_path);
+    fs::write(index_path, content.as_bytes())?;
 
     Ok(())
 }
