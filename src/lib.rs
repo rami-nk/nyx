@@ -129,14 +129,17 @@ pub struct NyxCli {
 
 #[derive(Subcommand)]
 pub enum NyxCommand {
+    /// Creates an empty nyx repository 
     Init,
     Add,
     Commit,
     // ####### LOW-LEVEL COMMANDS #######
+    /// Compute object ID and creates a blob object from a file 
     HashObject {
         #[clap(value_parser)]
         path: String,
     },
+    /// Provide content for repository object
     CatFile {
         #[clap(value_parser)]
         hash: String,
