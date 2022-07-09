@@ -20,7 +20,7 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
                 println!("Initializing nyx repo...");
                 init().unwrap();
             }
-            NyxCommand::HashObject { path } => hash_object(path)?,
+            NyxCommand::HashObject { path } => { hash_object(path)?; },
             NyxCommand::CatFile { hash } => cat_file(hash)?,
             NyxCommand::Add { file_path } => add(file_path)?,
             _ => (),
@@ -39,7 +39,7 @@ pub fn init() -> Result<(), NyxError> {
     Ok(())
 }
 
-pub fn hash_object(path: &str) -> Result<(), NyxError> {
+pub fn hash_object(path: &str) -> Result<String, NyxError> {
     // TODO: Should be callable from all dirs within the repo
     if !Path::new(".nyx").join("objects").exists() {
         // TODO: logging concept
@@ -68,7 +68,7 @@ pub fn hash_object(path: &str) -> Result<(), NyxError> {
 
     println!("{sha1}");
 
-    Ok(())
+    Ok(sha1)
 }
 
 fn zlib_compress(content: &[u8]) -> Result<Vec<u8>, NyxError> {
@@ -108,12 +108,10 @@ fn add(file_path: &str) -> Result<(), NyxError> {
     .create(true)
     .open([".nyx", "index"].iter().collect::<PathBuf>())?;
     
-    hash_object(&file_path)?;
-    
-    let content = fs::read(PathBuf::from(file_path))?;
-    let sha1 = calculate_sha1(&content);
+    let sha1 = hash_object(&file_path)?;
     
     let content = format!("{} {} ", sha1, &file_path);
+    println!("{content}");
     let compressed_bytes = zlib_compress(content.as_bytes())?;
     file.write(&compressed_bytes)?;
 
