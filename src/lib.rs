@@ -6,23 +6,27 @@ use std::{fmt, fs, str};
 use flate2::Compression;
 use flate2::write::ZlibEncoder; 
 use flate2::write::ZlibDecoder; 
+use std::fs::OpenOptions;
 
 mod errors;
 use errors::NyxError;
 
-pub fn run(cli: NyxCli) {
+// TODO: Encapsulate command matching logic and check if repo alredy setup
+pub fn run(cli: NyxCli) -> Result<(), NyxError> {
     match &cli.command {
         Some(command) => match command {
             NyxCommand::Init => {
                 println!("Initializing nyx repo...");
                 init().unwrap();
             }
-            NyxCommand::HashObject { path } => hash_object(path).unwrap(),
-            NyxCommand::CatFile { hash } => cat_file(hash),
+            NyxCommand::HashObject { path } => hash_object(path)?,
+            NyxCommand::CatFile { hash } => cat_file(hash)?,
+            NyxCommand::Add { file_path } => add(file_path)?,
             _ => (),
         },
         None => println!("Unknown command!"),
     };
+    Ok(())
 }
 
 pub fn init() -> Result<(), NyxError> {
@@ -58,9 +62,10 @@ pub fn hash_object(path: &str) -> Result<(), NyxError> {
 
     let mut file = fs::File::create(object_dir_path.join(&object_file))?;
 
-    let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
-    encoder.write_all(content.as_bytes())?;
-    let compressed_bytes = encoder.finish()?;
+    let compressed_bytes = zlib_compress(&content)?;
+    //let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+    //encoder.write_all(content.as_bytes())?;
+    //let compressed_bytes = encoder.finish()?;
 
     file.write(&compressed_bytes)?;
 
@@ -69,23 +74,52 @@ pub fn hash_object(path: &str) -> Result<(), NyxError> {
     Ok(())
 }
 
-fn cat_file(hash: &str) {
+// TODO: Change api of zlib_compress to accept a byte slice
+fn zlib_compress(content: &str) -> Result<Vec<u8>, NyxError> {
+   let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default()); 
+   encoder.write_all(content.as_bytes())?;
+   let compressed_bytes = encoder.finish()?;
+   Ok(compressed_bytes)
+}
+
+fn zlib_decompress(content: &[u8]) -> Result<Vec<u8>, NyxError> {
+    let mut writer = Vec::new();
+    let mut decoder = ZlibDecoder::new(writer);
+    decoder.write_all(content)?;
+    writer = decoder.finish()?;
+    Ok(writer)
+}
+
+fn cat_file(hash: &str) -> Result<(), NyxError> {
     // TODO: In every directory callable
     let path: PathBuf = [".nyx", "objects", &hash[..2], &hash[2..]].iter().collect();
 
-    let content = fs::read(path).expect("Unable to read file");
+    let content = fs::read(path)?;
 
-    let mut writer = Vec::new();
-    let mut decoder = ZlibDecoder::new(writer);
-    decoder.write_all(&content[..]).expect("Unable to write content");
-    writer = decoder.finish().unwrap();
+    let decompressed_bytes = zlib_decompress(&content)?;
     
     // Remove header
-    let index = writer.iter().position(|x| *x == 0).unwrap();
-    writer = (&writer[index..]).to_vec();
+    let index = decompressed_bytes.iter().position(|x| *x == 0).unwrap();
+    let decompressed_bytes = (&decompressed_bytes[index..]).to_vec();
 
-    let decompressed = String::from_utf8(writer).expect("Unable to parse bytes");
+    let decompressed = String::from_utf8(decompressed_bytes)?;
     println!("{}", decompressed); 
+    Ok(())
+}
+
+fn add(file_path: &str) -> Result<(), NyxError> {
+    // let mut appender = FileAccessor::Appender(path);
+    // appender.append(b"asdfasdf");
+    let mut file = OpenOptions::new()
+    .append(true)
+    .open([".nyx", "index"].iter().collect::<PathBuf>())?;
+    
+    let mut content = fs::read_to_string(PathBuf::from(file_path))?;
+    let sha1 = calculate_sha1(&content);
+    let content = format!("{} {}\n", &sha1, &file_path);
+//    file.write();
+
+    Ok(())
 }
 
 fn calculate_sha1(content: &str) -> String {
@@ -131,7 +165,11 @@ pub struct NyxCli {
 pub enum NyxCommand {
     /// Creates an empty nyx repository 
     Init,
-    Add,
+    /// Adds one or many files to staging area
+    Add {
+        #[clap(value_parser)]
+        file_path: String,
+    },
     Commit,
     // ####### LOW-LEVEL COMMANDS #######
     /// Compute object ID and creates a blob object from a file 
