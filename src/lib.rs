@@ -144,6 +144,9 @@ fn commit() {
     }
 
     fs::write(object_dir_path.join(&commit_sha1[2..]), &commit_content).unwrap();
+    
+    // Write current commit's hash to track head
+    fs::write([".nyx", "head"].iter().collect::<PathBuf>(), &commit_sha1).unwrap();
 }
 
 fn calculate_sha1(content: &[u8]) -> String {
