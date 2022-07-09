@@ -38,7 +38,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["cat-file", "ebc39e53e1e9541ca16371172a539ace316d0480"],
+            "args": ["ls-file"],
             "cwd": "${workspaceFolder}"
         },
         {

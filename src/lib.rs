@@ -1,11 +1,8 @@
 use clap::{Parser, Subcommand};
 use core::panic;
 use sha1::{Digest, Sha1};
-use std::{io::Write, path::{Path, PathBuf}};
+use std::{io::{Write, Read}, path::{Path, PathBuf}};
 use std::{fmt, fs, str};
-use flate2::Compression;
-use flate2::write::ZlibEncoder; 
-use flate2::write::ZlibDecoder; 
 use std::fs::OpenOptions;
 use format_bytes::format_bytes;
 
@@ -23,6 +20,7 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
             NyxCommand::HashObject { path } => { hash_object(path)?; },
             NyxCommand::CatFile { hash } => cat_file(hash)?,
             NyxCommand::Add { file_path } => add(file_path)?,
+            NyxCommand::LsFile => ls_file(),
             _ => (),
         },
         None => println!("Unknown command!"),
@@ -62,28 +60,11 @@ pub fn hash_object(path: &str) -> Result<String, NyxError> {
 
     let mut file = fs::File::create(object_dir_path.join(&object_file))?;
 
-    let compressed_bytes = zlib_compress(&content)?;
-
-    file.write(&compressed_bytes)?;
+    file.write(&content)?;
 
     println!("{sha1}");
 
     Ok(sha1)
-}
-
-fn zlib_compress(content: &[u8]) -> Result<Vec<u8>, NyxError> {
-   let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default()); 
-   encoder.write_all(content)?;
-   let compressed_bytes = encoder.finish()?;
-   Ok(compressed_bytes)
-}
-
-fn zlib_decompress(content: &[u8]) -> Result<Vec<u8>, NyxError> {
-    let mut writer = Vec::new();
-    let mut decoder = ZlibDecoder::new(writer);
-    decoder.write_all(content)?;
-    writer = decoder.finish()?;
-    Ok(writer)
 }
 
 fn cat_file(hash: &str) -> Result<(), NyxError> {
@@ -91,31 +72,43 @@ fn cat_file(hash: &str) -> Result<(), NyxError> {
     let path: PathBuf = [".nyx", "objects", &hash[..2], &hash[2..]].iter().collect();
     let content = fs::read(path)?;
 
-    let decompressed_bytes = zlib_decompress(&content)?;
-    
     // Remove header
-    let index = decompressed_bytes.iter().position(|x| *x == 0).unwrap();
-    let decompressed_bytes = (&decompressed_bytes[index..]).to_vec();
+    let index = &content.iter().position(|x| *x == 0).unwrap();
+    let content = &content[*index..];
 
-    let decompressed = String::from_utf8(decompressed_bytes)?;
-    println!("{}", decompressed); 
+    let content = str::from_utf8(&content)?;
+
+    println!("{}", content); 
     Ok(())
 }
 
 fn add(file_path: &str) -> Result<(), NyxError> {
+    // TODO: Check if same file with same hash and same file with different hash
+    let index_path = [".nyx", "index"].iter().collect::<PathBuf>();
+
     let mut file = OpenOptions::new()
-    .append(true)
     .create(true)
-    .open([".nyx", "index"].iter().collect::<PathBuf>())?;
+    .write(true)
+    .read(true)
+    .open(index_path)?;
     
     let sha1 = hash_object(&file_path)?;
     
-    let content = format!("{} {} ", sha1, &file_path);
-    println!("{content}");
-    let compressed_bytes = zlib_compress(content.as_bytes())?;
-    file.write(&compressed_bytes)?;
+    let mut content = Vec::new();
+    file.read_to_end(&mut content).unwrap();
+
+    let content = format_bytes!(b"{}\n{} {}", &content, sha1.as_bytes(), file_path.as_bytes());
+    println!("Index content after add: {}", String::from_utf8(content.clone()).unwrap());
+    file.write(&content)?;
 
     Ok(())
+}
+
+fn ls_file() {
+    let path = [".nyx", "index"].iter().collect::<PathBuf>();   
+    let content = fs::read(path).unwrap();
+    let content = str::from_utf8(&content).unwrap();
+    println!("{content}");
 }
 
 fn calculate_sha1(content: &[u8]) -> String {
@@ -175,4 +168,5 @@ pub enum NyxCommand {
         #[clap(value_parser)]
         hash: String,
     },
+    LsFile,
 }
