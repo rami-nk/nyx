@@ -1,5 +1,6 @@
 #![feature(drain_filter)]
 use core::panic;
+use std::ops::Deref;
 use sha1::{Digest, Sha1};
 use std::path::{Path, PathBuf};
 use std::{fmt, fs, str}; 
@@ -21,7 +22,7 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
             }
             NyxCommand::HashObject { path } => { hash_object(path)?; },
             NyxCommand::CatFile { hash } => cat_file(hash)?,
-            NyxCommand::Add { file_path } => add(file_path)?,
+            NyxCommand::Add { files } => add(files.deref().to_vec())?,
             NyxCommand::LsFile => ls_file(),
             NyxCommand::Commit => commit(),
         },
@@ -70,26 +71,27 @@ fn cat_file(hash: &str) -> Result<(), NyxError> {
     Ok(())
 }
 
-fn add(file_path: &str) -> Result<(), NyxError> {
+fn add(files: Vec<String>) -> Result<(), NyxError> {
     let index_path = [".nyx", "index"].iter().collect::<PathBuf>();
     
-    let sha1 = hash_object(&file_path)?;
-    
-    let mut content = String::new();
-    if index_path.exists() {
-        content = fs::read_to_string(&index_path)?;
+    for file in files {
+        let sha1 = hash_object(&file)?;
+        let mut content = String::new();
+        if index_path.exists() {
+            content = fs::read_to_string(&index_path)?;
+        }
+
+        if content.contains(&sha1) {
+            return Ok(());
+        }
+
+        let mut content: Vec<&str> = content.split("\n").collect();
+        content.drain_filter(|line| line.contains(&file));
+
+        let content = format!("{}\n{} {}", content.join(""), &sha1, &file);
+        fs::write(&index_path, content.as_bytes())?;
     }
     
-    if content.contains(&sha1) {
-        return Ok(());
-    }
-    
-    let mut content: Vec<&str> = content.split("\n").collect();
-    content.drain_filter(|line| line.contains(&file_path));
-
-    let content = format!("{}\n{} {}", content.join(""), &sha1, &file_path);
-    fs::write(index_path, content.as_bytes())?;
-
     Ok(())
 }
 
