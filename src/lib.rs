@@ -1,5 +1,4 @@
 #![feature(drain_filter)]
-use clap::{Parser, Subcommand};
 use core::panic;
 use sha1::{Digest, Sha1};
 use std::path::{Path, PathBuf};
@@ -8,6 +7,9 @@ use format_bytes::format_bytes;
 
 mod errors;
 use errors::NyxError;
+
+pub mod cl_args;
+use cl_args::{NyxCli, NyxCommand};
 
 // TODO: Encapsulate command matching logic and check if repo alredy setup
 pub fn run(cli: NyxCli) -> Result<(), NyxError> {
@@ -161,34 +163,3 @@ impl fmt::Display for NyxObjectType {
 // #############################################
 // ################ CLAP ARGPARSE ##############
 // #############################################
-
-#[derive(Parser)]
-#[clap(author, version, about, long_about = None)]
-pub struct NyxCli {
-    #[clap(subcommand)]
-    pub command: Option<NyxCommand>,
-}
-
-#[derive(Subcommand)]
-pub enum NyxCommand {
-    /// Creates an empty nyx repository 
-    Init,
-    /// Adds one or many files to staging area
-    Add {
-        #[clap(value_parser)]
-        file_path: String,
-    },
-    Commit,
-    // ####### LOW-LEVEL COMMANDS #######
-    /// Compute object ID and creates a blob object from a file 
-    HashObject {
-        #[clap(value_parser)]
-        path: String,
-    },
-    /// Provide content for repository object
-    CatFile {
-        #[clap(value_parser)]
-        hash: String,
-    },
-    LsFile,
-}

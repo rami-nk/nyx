@@ -1,5 +1,5 @@
 use clap::Parser;
-use nyx::NyxCli;
+use nyx::cl_args::NyxCli;
 
 fn main() {
     let cli = NyxCli::parse();
