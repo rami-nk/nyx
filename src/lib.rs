@@ -1,17 +1,17 @@
 #![feature(drain_filter)]
 use core::panic;
-use std::ops::Deref;
-use sha1::{Digest, Sha1};
-use std::path::{Path, PathBuf};
-use std::{fmt, fs, str}; 
 use format_bytes::format_bytes;
+use sha1::{Digest, Sha1};
+use std::ops::Deref;
+use std::path::{Path, PathBuf};
+use std::{fmt, fs, str};
 
+pub mod cl_args;
 mod errors;
 mod index;
-pub mod cl_args;
 
-use errors::NyxError;
 use cl_args::{NyxCli, NyxCommand};
+use errors::NyxError;
 use index::Index;
 
 // TODO: Encapsulate command matching logic and check if repo alredy setup
@@ -22,7 +22,9 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
                 println!("Initializing nyx repo...");
                 init().unwrap();
             }
-            NyxCommand::HashObject { path } => { hash_object(path)?; },
+            NyxCommand::HashObject { path } => {
+                hash_object(path)?;
+            }
             NyxCommand::CatFile { hash } => cat_file(hash)?,
             NyxCommand::Add { files } => add(files.deref().to_vec())?,
             NyxCommand::LsFile => ls_file(),
@@ -69,40 +71,40 @@ fn cat_file(hash: &str) -> Result<(), NyxError> {
 
     let content = str::from_utf8(&content)?;
 
-    println!("{}", content); 
+    println!("{}", content);
     Ok(())
 }
 
 fn add(files: Vec<String>) -> Result<(), NyxError> {
     let mut index = Index::new();
-    
+
     for file in files {
         let sha1 = hash_object(&file)?;
         index.add(&sha1, &file).unwrap();
     }
-    
+
     Ok(())
 }
 
 fn ls_file() {
-    let path = [".nyx", "index"].iter().collect::<PathBuf>();   
+    let path = [".nyx", "index"].iter().collect::<PathBuf>();
     let content = fs::read_to_string(path).unwrap();
     println!("{content}");
 }
 
 fn commit() {
-    let index_file = [".nyx", "index"].iter().collect::<PathBuf>();   
-    
+    let index_file = [".nyx", "index"].iter().collect::<PathBuf>();
+
     if !index_file.exists() {
         panic!("Noting to commit.");
     }
-    
+
     // Generate Tree Object (currently only a single one)
     // TODO: handle file in directory (build trees)
     let index_content = fs::read_to_string(index_file).unwrap();
-    
+
     let tree_hash = generate_object(index_content.as_bytes(), NyxObjectType::Tree);
-    
+
     // TODO: Add parent section referencing last commit
     // Generate Commit Object
     let commit_content = format!("tree {}", tree_hash);
@@ -115,7 +117,7 @@ fn commit() {
 fn generate_object(content: &[u8], object_type: NyxObjectType) -> String {
     let content = append_object_header(content, object_type);
     let hash = calculate_sha1(&content);
-    
+
     let object_dir_path: PathBuf = [".nyx", "objects", &hash[..2]].iter().collect();
 
     if !object_dir_path.exists() {
@@ -150,7 +152,3 @@ impl fmt::Display for NyxObjectType {
         write!(f, "{:?}", self)
     }
 }
-
-// #############################################
-// ################ CLAP ARGPARSE ##############
-// #############################################

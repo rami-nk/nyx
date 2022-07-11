@@ -9,7 +9,7 @@ pub struct NyxCli {
 
 #[derive(Subcommand)]
 pub enum NyxCommand {
-    /// Creates an empty nyx repository 
+    /// Creates an empty nyx repository
     Init,
     /// Adds one or many files to staging area
     Add {
@@ -18,7 +18,7 @@ pub enum NyxCommand {
     },
     Commit,
     // ####### LOW-LEVEL COMMANDS #######
-    /// Compute object ID and creates a blob object from a file 
+    /// Compute object ID and creates a blob object from a file
     HashObject {
         #[clap(value_parser)]
         path: String,
