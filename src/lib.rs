@@ -1,4 +1,5 @@
 #![feature(drain_filter)]
+use colored::*;
 use core::panic;
 use format_bytes::format_bytes;
 use sha1::{Digest, Sha1};
@@ -13,7 +14,7 @@ mod object_type;
 
 use cl_args::{NyxCli, NyxCommand};
 use errors::NyxError;
-use index::Index;
+use index::{Index, NyxFileState};
 use object_type::NyxObjectType;
 
 // TODO: Encapsulate command matching logic and check if repo alredy setup
@@ -33,6 +34,7 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
             NyxCommand::Add { files } => add(files.deref().to_vec())?,
             NyxCommand::LsFile => ls_file(),
             NyxCommand::Commit => commit(),
+            NyxCommand::Status => status(),
         },
         None => println!("Unknown command!"),
     };
@@ -116,6 +118,38 @@ fn commit() {
 
     // Write current commit's hash to track head
     fs::write([".nyx", "head"].iter().collect::<PathBuf>(), &commit_hash).unwrap();
+}
+
+fn status() {
+    let root_dir = env::current_dir().unwrap();
+    let index = Index::new();
+    _status(&root_dir, &root_dir, &index);
+}
+
+fn _status(fixed_root: &PathBuf, root: &PathBuf, index: &Index) {
+    for path in fs::read_dir(root).unwrap() {
+        let path = &path.unwrap().path();
+        // TODO: create .nyxigore file
+        if path.ends_with(".nyx") ||
+           path.ends_with(".git") ||
+           path.ends_with("target") ||
+           path.ends_with(".vscode") {
+            continue;
+        }
+        if path.is_dir() {
+            _status(fixed_root, &root.join(path), index);
+        } else {
+            let content = fs::read_to_string(path).unwrap();
+            let content = append_object_header(content.as_bytes(), NyxObjectType::Blob);
+            let hash = calculate_sha1(&content);
+            let path_str = path.strip_prefix(fixed_root).unwrap().to_str().unwrap(); 
+            match index.get_status(&hash, path_str) {
+                NyxFileState::Staged =>   println!("{}", path_str.green()),
+                NyxFileState::Modified => println!("{}", path_str.blue()),
+                NyxFileState::Unstaged => println!("{}", path_str.red()),
+            }
+        }
+    }
 }
 
 fn generate_object(content: &[u8], object_type: NyxObjectType) -> String {

@@ -17,6 +17,7 @@ pub enum NyxCommand {
         files: Vec<String>,
     },
     Commit,
+    Status,
     // ####### LOW-LEVEL COMMANDS #######
     /// Compute object ID and creates a blob object from a file
     HashObject {

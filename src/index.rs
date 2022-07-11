@@ -63,6 +63,26 @@ impl Index {
     fn contains_hash(&self, hash: &str) -> bool {
         self.entries.iter().any(|entry| entry.hash == hash)
     }
+    
+    pub fn contains_file(&self, path: &str) -> bool {
+        self.entries.iter().any(|entry| entry.path == path)
+    }
+  
+    pub fn get_status(&self, hash: &str, path: &str) -> NyxFileState {
+        if self.contains_hash(hash) {
+            return NyxFileState::Staged;
+        }
+        if self.contains_file(path) {
+            return NyxFileState::Modified;
+        }
+        NyxFileState::Unstaged
+    }
+}
+
+pub enum NyxFileState {
+    Unstaged,
+    Staged,
+    Modified,
 }
 
 #[derive(Debug)]
