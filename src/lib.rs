@@ -4,15 +4,17 @@ use format_bytes::format_bytes;
 use sha1::{Digest, Sha1};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
-use std::{fmt, fs, str};
+use std::{fs, str};
 
 pub mod cl_args;
 mod errors;
 mod index;
+mod object_type;
 
 use cl_args::{NyxCli, NyxCommand};
 use errors::NyxError;
 use index::Index;
+use object_type::NyxObjectType;
 
 // TODO: Encapsulate command matching logic and check if repo alredy setup
 pub fn run(cli: NyxCli) -> Result<(), NyxError> {
@@ -138,17 +140,4 @@ fn append_object_header(content: &[u8], object_type: NyxObjectType) -> Vec<u8> {
     let object_type_bytes = object_type.to_string().to_lowercase().as_bytes().to_vec();
     let content_len_bytes = content.len().to_string().as_bytes().to_vec();
     format_bytes!(b"{} {}\0{}", object_type_bytes, content_len_bytes, content)
-}
-
-#[derive(Debug)]
-pub enum NyxObjectType {
-    Commit,
-    Tree,
-    Blob,
-}
-
-impl fmt::Display for NyxObjectType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
 }
