@@ -1,5 +1,6 @@
 #![feature(drain_filter)]
 use core::panic;
+use std::io::Write;
 use std::ops::Deref;
 use sha1::{Digest, Sha1};
 use std::path::{Path, PathBuf};
@@ -72,28 +73,83 @@ fn cat_file(hash: &str) -> Result<(), NyxError> {
 }
 
 fn add(files: Vec<String>) -> Result<(), NyxError> {
-    let index_path = [".nyx", "index"].iter().collect::<PathBuf>();
+    let mut index = Index::new();
     
     for file in files {
         let sha1 = hash_object(&file)?;
-        let mut content = String::new();
-        if index_path.exists() {
-            content = fs::read_to_string(&index_path)?;
-        }
 
-        if content.contains(&sha1) {
+        if index.contains_hash(&sha1) {
             return Ok(());
         }
-
-        let mut content: Vec<&str> = content.split("\n").collect();
-        content.drain_filter(|line| line.contains(&file));
-
-        let content = format!("{}\n{} {}", content.join(""), &sha1, &file);
-        fs::write(&index_path, content.as_bytes())?;
+        index.add(&sha1, &file).unwrap();
     }
     
     Ok(())
 }
+
+struct Index {
+    path: PathBuf,
+    entries: Vec<IndexEntry>,
+}
+
+impl Index {
+    fn new() -> Self {
+        let path = [".nyx", "index"].iter().collect::<PathBuf>();   
+        let mut entries = Vec::new();
+        if path.exists() {
+           let content = fs::read_to_string(&path).unwrap();
+           let raw_entries: Vec<String> = content.split('\n')
+                                .map(|val| String::from(val))
+                                .filter(|val| !val.is_empty())
+                                .collect();
+           for entry in raw_entries {
+               let splits: Vec<&str> = entry.split_whitespace().collect();
+               entries.push(IndexEntry { hash: splits[0].to_string(), path: splits[1].to_string()});
+           }
+        }
+        Self {
+            path,
+            entries,
+        }
+    }
+    
+    fn add(&mut self, hash: &str, path: &str) -> std::io::Result<()> {
+        self.entries.drain_filter(|entry| entry.path == path);
+
+        println!("{:?}", self.entries);
+        let index_entry = IndexEntry { hash: hash.to_string(), path: path.to_string()};
+        self.entries.push(index_entry);
+        let mut file = fs::OpenOptions::new()
+            .create(true)
+            .write(true)
+            .open(&self.path).unwrap();
+
+        println!("{:?}", self.entries);
+        let entries_bytes: Vec<Vec<u8>> = self.entries.iter()
+                            .map(|entry| format_bytes!(b"{}\n", entry.as_bytes()))
+                            .collect();
+        let entries_bytes = entries_bytes.concat();
+        file.write_all(&entries_bytes).unwrap();
+        Ok(())
+    }
+    
+    fn contains_hash(&self, hash: &str) -> bool {
+        self.entries.iter().any(|entry| entry.hash == hash)
+    }
+}
+
+#[derive(Debug)]
+struct IndexEntry {
+    hash: String,
+    path: String,
+}
+
+impl IndexEntry {
+    fn as_bytes(&self) -> Vec<u8> {
+       format_bytes!(b"{} {}", self.hash.as_bytes(), self.path.as_bytes())
+    }
+}
+
 
 fn ls_file() {
     let path = [".nyx", "index"].iter().collect::<PathBuf>();   
