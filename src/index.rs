@@ -39,19 +39,17 @@ impl Index {
 
         self.entries.drain_filter(|entry| entry.path == path);
 
-        println!("{:?}", self.entries);
-        let index_entry = IndexEntry {
+        self.entries.push(IndexEntry {
             hash: hash.to_string(),
             path: path.to_string(),
-        };
-        self.entries.push(index_entry);
+        });
+
         let mut file = fs::OpenOptions::new()
             .create(true)
             .write(true)
             .open(&self.path)
             .unwrap();
 
-        println!("{:?}", self.entries);
         let entries_bytes: Vec<Vec<u8>> = self
             .entries
             .iter()
