@@ -4,7 +4,7 @@ use format_bytes::format_bytes;
 use sha1::{Digest, Sha1};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
-use std::{fs, str};
+use std::{fs, str, env};
 
 pub mod cl_args;
 mod errors;
@@ -21,8 +21,10 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
     match &cli.command {
         Some(command) => match command {
             NyxCommand::Init => {
-                println!("Initializing nyx repo...");
-                init().unwrap();
+                if let Ok(_) = init() {
+                    let nyx_dir = env::current_dir().unwrap().join(".nyx");
+                    println!("Inizialized empty nyx repository in {:?}.", nyx_dir);
+                }
             }
             NyxCommand::HashObject { path } => {
                 hash_object(path)?;
