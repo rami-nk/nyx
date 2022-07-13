@@ -57,7 +57,8 @@ impl Byte for TreeEntry {
 
 impl Byte for Vec<TreeEntry> {
     fn as_bytes(&self) -> Vec<u8> {
-        let bytes_vec: Vec<Vec<u8>> = self.iter().map(|e| e.as_bytes()).collect();
+        let bytes_vec: Vec<Vec<u8>> = self.iter().map(|e| 
+            format_bytes!(b"{}\n", e.as_bytes())).collect();
         (&bytes_vec.concat()[..]).to_vec()
     }
 }

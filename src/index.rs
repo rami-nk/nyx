@@ -109,7 +109,6 @@ impl Index {
             idx += 1;
         }
 
-        // TODO: Hash calculation not correct
         let content = append_object_header(&tree.entries.as_bytes()[..], NyxObjectType::Tree);
         let hash = calculate_sha1(&content);
         tree.set_hash(&hash);
