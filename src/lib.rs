@@ -13,11 +13,13 @@ mod index;
 mod object_type;
 mod tree;
 mod traits;
+mod commit;
 
 use cl_args::{NyxCli, NyxCommand};
 use errors::NyxError;
 use index::{Index, NyxFileState};
 use object_type::NyxObjectType;
+use commit::Commit;
 
 // TODO: Encapsulate command matching logic and check if repo alredy setup
 pub fn run(cli: NyxCli) -> Result<(), NyxError> {
@@ -102,9 +104,12 @@ fn ls_file() {
 
 fn commit() {
     // TODO: Check for ustaged changes
+    // TODO: Remove all elements form staging area
     let mut index = Index::new();
     let tree = index.write_tree();
-    println!("{:#?}", tree);
+    let mut commit = Commit::new(tree);
+    commit.write();
+    println!("{}", commit.get_hash());
 }
 
 fn status() {
