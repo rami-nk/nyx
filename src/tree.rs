@@ -21,14 +21,19 @@ impl Tree {
          }
     }
     
-    pub fn add_entry(&mut self, hash: &str, name: &str, entry_type: NyxObjectType) {
+    fn add_entry(&mut self, hash: &str, name: &str, entry_type: NyxObjectType) {
         self.entries.push(TreeEntry { 
             entry_type: entry_type, 
             hash: hash.to_string(),
             path: name.to_string() });
     }
     
+    pub fn add_blob(&mut self, hash: &str, name: &str) {
+        self.add_entry(hash, name, NyxObjectType::Blob);
+    }
+    
     pub fn add_tree(&mut self, tree: Tree) {
+        self.add_entry(&tree.hash, &tree.path, NyxObjectType::Tree);
         self.trees.push(tree);
     }
     

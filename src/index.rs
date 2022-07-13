@@ -100,16 +100,12 @@ impl Index {
                 }
 
                 let mut new_tree = Index::_write_tree(&mut same_dir_entries);
-                new_tree.path = dir.clone();
-
-                let new_tree_hash = new_tree.hash.clone();
+                new_tree.path = dir;
 
                 tree.add_tree(new_tree);
 
-                tree.add_entry(&new_tree_hash, &dir, NyxObjectType::Tree);
-
             } else {
-                tree.add_entry(&index[idx].hash, &index[idx].path, NyxObjectType::Blob);
+                tree.add_blob(&index[idx].hash, &index[idx].path);
             }
             idx += 1;
         }
