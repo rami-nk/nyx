@@ -3,8 +3,8 @@ use std::{fs, vec};
 use std::io::Write;
 use std::path::PathBuf;
 
-use crate::{append_object_header, calculate_sha1};
 use crate::errors::NyxError;
+use crate::generate_object;
 use crate::object_type::NyxObjectType;
 use crate::tree::Tree;
 use crate::traits::Byte;
@@ -66,11 +66,11 @@ impl Index {
     
     pub fn write_tree(&mut self) -> Tree {
         self.entries.sort_by(|e1, e2| e1.path.cmp(&e2.path));
-        let tree = Index::_write_tree(&mut self.entries);
+        let tree = Index::write_tree_recursiv(&mut self.entries);
         tree
     }
     
-    fn _write_tree(index: &mut Vec<IndexEntry>) -> Tree {
+    fn write_tree_recursiv(index: &mut Vec<IndexEntry>) -> Tree {
         let mut tree = Tree::new();
         
         let mut idx = 0;
@@ -98,7 +98,7 @@ impl Index {
                     }
                 }
 
-                let mut new_tree = Index::_write_tree(&mut same_dir_entries);
+                let mut new_tree = Index::write_tree_recursiv(&mut same_dir_entries);
                 new_tree.path = dir;
 
                 tree.add_tree(new_tree);
@@ -109,8 +109,7 @@ impl Index {
             idx += 1;
         }
 
-        let content = append_object_header(&tree.entries.as_bytes()[..], NyxObjectType::Tree);
-        let hash = calculate_sha1(&content);
+        let hash = generate_object(&tree.entries.as_bytes()[..], NyxObjectType::Tree);
         tree.set_hash(&hash);
         
         tree
