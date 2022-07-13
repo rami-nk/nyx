@@ -99,6 +99,9 @@ fn ls_file() {
 }
 
 fn commit() {
+    let mut index = Index::new();
+    index.write_tree();
+    /*
     let index_file = [".nyx", "index"].iter().collect::<PathBuf>();
 
     if !index_file.exists() {
@@ -118,6 +121,7 @@ fn commit() {
 
     // Write current commit's hash to track head
     fs::write([".nyx", "head"].iter().collect::<PathBuf>(), &commit_hash).unwrap();
+    */
 }
 
 fn status() {

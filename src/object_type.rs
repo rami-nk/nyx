@@ -1,6 +1,7 @@
 use std::fmt;
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub enum NyxObjectType {
     Commit,
     Tree,
