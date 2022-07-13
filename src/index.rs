@@ -62,10 +62,10 @@ impl Index {
         Ok(())
     }
     
-    pub fn write_tree(&mut self) {
+    pub fn write_tree(&mut self) -> Tree {
         self.entries.sort_by(|e1, e2| e1.path.cmp(&e2.path));
         let tree = Index::_write_tree(&mut self.entries);
-        println!("{:#?}", tree);
+        tree
     }
     
     fn _write_tree(index: &mut Vec<IndexEntry>) -> Tree {
@@ -96,24 +96,6 @@ impl Index {
                         break;
                     }
                 }
-                
-                //let mut index_copy = index.clone();
-               /*
-               
-                let mut x = 0;
-                index_copy.retain(|_| {
-                    let v = x;
-                    x += 1;
-                    v == i
-                });
-               */ 
-                /*
-                for j in 0..i {
-                    index_copy.remove(j);
-                }
-                */
-                
-                //let new_tree = tree.with_path(&dir);
 
                 let mut new_tree = Index::_write_tree(&mut same_dir_entries);
                 new_tree.path = dir.clone();
@@ -140,6 +122,7 @@ impl Index {
             idx += 1;
         }
 
+        // TODO: Hash calculation not correct
         let bytes: Vec<Vec<u8>> = tree.entries.iter().map(|e| e.as_bytes()).collect();
         let content = append_object_header(&bytes.concat()[..], NyxObjectType::Tree);
         let hash = calculate_sha1(&content);
@@ -168,7 +151,7 @@ impl Index {
 }
 
 #[derive(Debug)]
-struct Tree {
+pub struct Tree {
     hash: String,
     entries: Vec<TreeEntry>,
     trees: Vec<Tree>,
@@ -184,7 +167,7 @@ struct TreeEntry {
 
 impl TreeEntry {
     fn as_bytes(&self) -> Vec<u8> {
-        format_bytes!(b"{} {}", self.hash.as_bytes(), self.path.as_bytes())
+        format_bytes!(b"{} {} {}", self.entry_type.to_string().to_lowercase().as_bytes(), self.hash.as_bytes(), self.path.as_bytes())
     }
 }
 

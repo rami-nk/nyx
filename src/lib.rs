@@ -100,28 +100,8 @@ fn ls_file() {
 
 fn commit() {
     let mut index = Index::new();
-    index.write_tree();
-    /*
-    let index_file = [".nyx", "index"].iter().collect::<PathBuf>();
-
-    if !index_file.exists() {
-        panic!("Noting to commit.");
-    }
-
-    // Generate Tree Object (currently only a single one)
-    // TODO: handle file in directory (build trees)
-    let index_content = fs::read_to_string(index_file).unwrap();
-
-    let tree_hash = generate_object(index_content.as_bytes(), NyxObjectType::Tree);
-
-    // TODO: Add parent section referencing last commit
-    // Generate Commit Object
-    let commit_content = format!("tree {}", tree_hash);
-    let commit_hash = generate_object(commit_content.as_bytes(), NyxObjectType::Commit);
-
-    // Write current commit's hash to track head
-    fs::write([".nyx", "head"].iter().collect::<PathBuf>(), &commit_hash).unwrap();
-    */
+    let tree = index.write_tree();
+    println!("{:#?}", tree);
 }
 
 fn status() {
