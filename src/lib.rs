@@ -32,11 +32,12 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
                 }
             }
             NyxCommand::HashObject { path } => _ = hash_object(path)?,
-            NyxCommand::CatFile { hash } => cat_file(hash)?,
+            NyxCommand::CatFile { hash } => _ = cat_file(hash)?,
             NyxCommand::Add { files } => add(files.deref().to_vec())?,
             NyxCommand::LsFile => ls_file(),
             NyxCommand::Commit { message } => commit(message),
             NyxCommand::Status => status(),
+            NyxCommand::Log => log(),
         },
         None => println!("Unknown command!"),
     };
@@ -68,7 +69,7 @@ pub fn hash_object(path: &str) -> Result<String, NyxError> {
     Ok(object_hash)
 }
 
-fn cat_file(hash: &str) -> Result<(), NyxError> {
+fn cat_file(hash: &str) -> Result<String, NyxError> {
     // TODO: In every directory callable
     let path: PathBuf = [".nyx", "objects", &hash[..2], &hash[2..]].iter().collect();
     let content = fs::read(path)?;
@@ -80,7 +81,7 @@ fn cat_file(hash: &str) -> Result<(), NyxError> {
     let content = str::from_utf8(&content)?;
 
     println!("{}", content);
-    Ok(())
+    Ok(content.to_string())
 }
 
 fn add(files: Vec<String>) -> Result<(), NyxError> {
@@ -105,9 +106,20 @@ fn commit(message: &str) {
     // TODO: Remove all elements form staging area
     let mut index = Index::new();
     let tree = index.write_tree();
-    let mut commit = Commit::new(tree, message);
+    let mut commit = Commit::new(&tree.hash, message);
     commit.write();
     println!("{}", commit.get_hash());
+}
+
+fn log() {
+    // TODO: implement Commit::from_head() & Tree::from_hash()
+    let mut commit = Commit::from_head();
+
+    while let Some(c) = &commit {
+        println!("{}", c.get_content());
+        print!("\n\n--------------------------------------------------\n\n");
+        commit = Commit::from_hash(&c.get_parent_hash());
+    }
 }
 
 fn status() {

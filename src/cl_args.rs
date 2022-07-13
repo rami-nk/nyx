@@ -22,6 +22,7 @@ pub enum NyxCommand {
         message: String
     },
     Status,
+    Log,
     // ####### LOW-LEVEL COMMANDS #######
     /// Compute object ID and creates a blob object from a file
     HashObject {
