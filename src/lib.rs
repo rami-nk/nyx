@@ -11,6 +11,7 @@ pub mod cl_args;
 mod errors;
 mod index;
 mod object_type;
+mod tree;
 
 use cl_args::{NyxCli, NyxCommand};
 use errors::NyxError;
@@ -99,6 +100,7 @@ fn ls_file() {
 }
 
 fn commit() {
+    // TODO: Check for ustaged changes
     let mut index = Index::new();
     let tree = index.write_tree();
     println!("{:#?}", tree);
