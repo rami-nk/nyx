@@ -82,8 +82,7 @@ impl Index {
                 dir.replace_range(i_x.., "");
 
                 let prefix = format!("{}/", dir);
-                // TODO: very bad!!
-                index[idx].path = index[idx].path.replace(&prefix, "");
+                index[idx].path = index[idx].path.replacen(&prefix, "", 1);
                 
                 let mut same_dir_entries = vec![index[idx].clone()];
                 
@@ -91,7 +90,7 @@ impl Index {
                     let entry = &index[j];
                     if entry.path.starts_with(&prefix) {
                         let mut entry = entry.clone();
-                        entry.path = entry.path.replace(&prefix, "");
+                        entry.path = entry.path.replacen(&prefix, "", 1);
                         same_dir_entries.push(entry);
                         idx += 1;
                     } else {

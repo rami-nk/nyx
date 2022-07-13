@@ -108,6 +108,7 @@ fn commit() {
 }
 
 fn status() {
+    // TODO: Error: Empty file is displayed as staged
     let root_dir = env::current_dir().unwrap();
     let index = Index::new();
     _status(&root_dir, &root_dir, &index);
