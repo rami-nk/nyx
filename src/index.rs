@@ -89,7 +89,7 @@ impl Index {
                 
                 for j in idx+1..index.len() {
                     let entry = &index[j];
-                    if entry.path.contains(&prefix) {
+                    if entry.path.starts_with(&prefix) {
                         let mut entry = entry.clone();
                         entry.path = entry.path.replace(&prefix, "");
                         same_dir_entries.push(entry);
