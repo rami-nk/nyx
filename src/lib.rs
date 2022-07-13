@@ -12,6 +12,7 @@ mod errors;
 mod index;
 mod object_type;
 mod tree;
+mod traits;
 
 use cl_args::{NyxCli, NyxCommand};
 use errors::NyxError;

@@ -7,7 +7,7 @@ use crate::{append_object_header, calculate_sha1};
 use crate::errors::NyxError;
 use crate::object_type::NyxObjectType;
 use crate::tree::Tree;
-use crate::tree::Byte;
+use crate::traits::Byte;
 
 pub struct Index {
     path: PathBuf,
@@ -104,12 +104,12 @@ impl Index {
 
                 let new_tree_hash = new_tree.hash.clone();
 
-                tree.add_tree_aber_wirklich_diesmal(new_tree);
+                tree.add_tree(new_tree);
 
-                tree.add_tree(&new_tree_hash, &dir);
+                tree.add_entry(&new_tree_hash, &dir, NyxObjectType::Tree);
 
             } else {
-                tree.add_blob(&index[idx].hash, &index[idx].path);
+                tree.add_entry(&index[idx].hash, &index[idx].path, NyxObjectType::Blob);
             }
             idx += 1;
         }

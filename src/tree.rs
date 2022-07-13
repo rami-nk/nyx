@@ -1,4 +1,6 @@
 use format_bytes::format_bytes;
+
+use crate::traits::Byte;
 use crate::NyxObjectType;
 
 #[derive(Debug)]
@@ -19,26 +21,15 @@ impl Tree {
          }
     }
     
-    pub fn add_tree(&mut self, hash: &str, dir: &str) {
-        // check if dir is already in tree and override if so 
-        
-        self.entries.retain(|e| e.path != dir);
-        
+    pub fn add_entry(&mut self, hash: &str, name: &str, entry_type: NyxObjectType) {
         self.entries.push(TreeEntry { 
-            entry_type: NyxObjectType::Tree, 
+            entry_type: entry_type, 
             hash: hash.to_string(),
-            path: dir.to_string() });
+            path: name.to_string() });
     }
     
-    pub fn add_tree_aber_wirklich_diesmal(&mut self, tree: Tree) {
+    pub fn add_tree(&mut self, tree: Tree) {
         self.trees.push(tree);
-    }
-
-    pub fn add_blob(&mut self, hash: &str, dir: &str) {
-        self.entries.push(TreeEntry { 
-            entry_type: NyxObjectType::Blob, 
-            hash: hash.to_string(),
-            path: dir.to_string() });
     }
     
     pub fn set_hash(&mut self, hash: &str) {
@@ -57,10 +48,6 @@ impl Byte for TreeEntry {
     fn as_bytes(&self) -> Vec<u8> {
         format_bytes!(b"{} {} {}", self.entry_type.to_string().to_lowercase().as_bytes(), self.hash.as_bytes(), self.path.as_bytes())
     }
-}
-
-pub trait Byte {
-    fn as_bytes(&self) -> Vec<u8>;
 }
 
 impl Byte for Vec<TreeEntry> {
