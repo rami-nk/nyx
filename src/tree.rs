@@ -30,14 +30,6 @@ impl Tree {
             path: dir.to_string() });
     }
     
-    pub fn with_path(&self, path: &str) -> Option<&Tree> {
-        self.trees.iter().find(|t| t.path == path.to_string())
-    }
-    
-    pub fn remove_tree(&mut self, hash: &str) {
-        self.trees.retain(|t| t.hash == hash.to_string());
-    }
-    
     pub fn add_tree_aber_wirklich_diesmal(&mut self, tree: Tree) {
         self.trees.push(tree);
     }
@@ -61,8 +53,19 @@ pub struct TreeEntry {
     path: String,
 }
 
-impl TreeEntry {
-    pub fn as_bytes(&self) -> Vec<u8> {
+impl Byte for TreeEntry {
+    fn as_bytes(&self) -> Vec<u8> {
         format_bytes!(b"{} {} {}", self.entry_type.to_string().to_lowercase().as_bytes(), self.hash.as_bytes(), self.path.as_bytes())
+    }
+}
+
+pub trait Byte {
+    fn as_bytes(&self) -> Vec<u8>;
+}
+
+impl Byte for Vec<TreeEntry> {
+    fn as_bytes(&self) -> Vec<u8> {
+        let bytes_vec: Vec<Vec<u8>> = self.iter().map(|e| e.as_bytes()).collect();
+        (&bytes_vec.concat()[..]).to_vec()
     }
 }

@@ -7,6 +7,7 @@ use crate::{append_object_header, calculate_sha1};
 use crate::errors::NyxError;
 use crate::object_type::NyxObjectType;
 use crate::tree::Tree;
+use crate::tree::Byte;
 
 pub struct Index {
     path: PathBuf,
@@ -102,21 +103,11 @@ impl Index {
                 new_tree.path = dir.clone();
 
                 let new_tree_hash = new_tree.hash.clone();
-                
-                if let Some(t) = tree.with_path(&dir) {
-                    let a = t.entries.clone();
-                    for entry in a {
-                        new_tree.entries.push(entry);
-                    }
-                }
-
-                if let Some(t) = tree.with_path(&dir) {
-                    tree.remove_tree(&t.hash.clone());
-                }
 
                 tree.add_tree_aber_wirklich_diesmal(new_tree);
 
                 tree.add_tree(&new_tree_hash, &dir);
+
             } else {
                 tree.add_blob(&index[idx].hash, &index[idx].path);
             }
@@ -124,8 +115,7 @@ impl Index {
         }
 
         // TODO: Hash calculation not correct
-        let bytes: Vec<Vec<u8>> = tree.entries.iter().map(|e| e.as_bytes()).collect();
-        let content = append_object_header(&bytes.concat()[..], NyxObjectType::Tree);
+        let content = append_object_header(&tree.entries.as_bytes()[..], NyxObjectType::Tree);
         let hash = calculate_sha1(&content);
         tree.set_hash(&hash);
         
