@@ -16,7 +16,11 @@ pub enum NyxCommand {
         #[clap(value_parser)]
         files: Vec<String>,
     },
-    Commit,
+    /// Record changes to the repository
+    Commit {
+        #[clap(short, value_parser)]
+        message: String
+    },
     Status,
     // ####### LOW-LEVEL COMMANDS #######
     /// Compute object ID and creates a blob object from a file

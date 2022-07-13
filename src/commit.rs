@@ -14,7 +14,7 @@ pub struct Commit {
 }
 
 impl Commit {
-    pub fn new(tree: Tree) -> Self {
+    pub fn new(tree: Tree, message: &str) -> Self {
         let head_path: PathBuf = [".nyx", "HEAD"].iter().collect();
         let mut parent_hash = String::new();
         if head_path.exists() {
@@ -25,7 +25,7 @@ impl Commit {
             tree,
             parent_hash,
             hash: String::new(),
-            message: String::new(),
+            message: message.to_string(),
         }
     }
     

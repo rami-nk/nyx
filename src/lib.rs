@@ -31,13 +31,11 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
                     println!("Inizialized empty nyx repository in {:?}.", nyx_dir);
                 }
             }
-            NyxCommand::HashObject { path } => {
-                hash_object(path)?;
-            }
+            NyxCommand::HashObject { path } => _ = hash_object(path)?,
             NyxCommand::CatFile { hash } => cat_file(hash)?,
             NyxCommand::Add { files } => add(files.deref().to_vec())?,
             NyxCommand::LsFile => ls_file(),
-            NyxCommand::Commit => commit(),
+            NyxCommand::Commit { message } => commit(message),
             NyxCommand::Status => status(),
         },
         None => println!("Unknown command!"),
@@ -102,12 +100,12 @@ fn ls_file() {
     println!("{content}");
 }
 
-fn commit() {
+fn commit(message: &str) {
     // TODO: Check for ustaged changes
     // TODO: Remove all elements form staging area
     let mut index = Index::new();
     let tree = index.write_tree();
-    let mut commit = Commit::new(tree);
+    let mut commit = Commit::new(tree, message);
     commit.write();
     println!("{}", commit.get_hash());
 }
