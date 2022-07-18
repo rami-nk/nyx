@@ -21,7 +21,9 @@ pub enum NyxCommand {
         #[clap(short, value_parser)]
         message: String
     },
+    /// Display untracked/modified files
     Status,
+    /// Log commit history
     Log,
     // ####### LOW-LEVEL COMMANDS #######
     /// Compute object ID and creates a blob object from a file
@@ -34,5 +36,6 @@ pub enum NyxCommand {
         #[clap(value_parser)]
         hash: String,
     },
+    /// Provide content of index
     LsFile,
 }
