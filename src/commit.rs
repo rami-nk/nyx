@@ -1,8 +1,11 @@
+use std::fmt::Display;
 use std::path::PathBuf;
 use std::fs;
 
+use colored::Colorize;
+
 use crate::object_type::NyxObjectType;
-use crate::{generate_object, cat_file};
+use crate::{generate_object, read_object_data};
 
 #[derive(Debug)]
 pub struct Commit {
@@ -39,33 +42,45 @@ impl Commit {
     }
     
     pub fn get_content(&self) -> String {
-        let mut content = format!("tree {}", self.tree_hash);
+        // TODO: Delimter \0 as constant
+        let mut content = format!("tree {}\n", self.tree_hash);
         if !self.parent_hash.is_empty() {
-            content = format!("{}\nparent {}", content, self.parent_hash);
+            content = format!("{}parent {}\n", content, self.parent_hash);
         }
         if !self.message.is_empty() {
-            content = format!("{}\n\n\n{}", content, self.message);
+            content = format!("{}{}", content, self.message);
         }
         content
     }
 
     pub fn from_hash(hash: &str) -> Option<Self> {
-        // TODO: Implement general read object to struct method (maybe in NyxFileSystem)
-        let content = cat_file(&hash).unwrap();
-        let content: Vec<&str> = content.split("\n").filter(|e| !e.is_empty()).collect();
-        
-        if content.len() != 3 {
+        if hash.is_empty() {
             return None;
         }
+        // TODO: Implement general read object to struct method (maybe in NyxFileSystem)
+        let content = read_object_data(&hash).unwrap();
+        let content: Vec<&str> = content.split("\n").filter(|e| !e.is_empty()).collect();
         
-        let tree_hash = (content[0].split_whitespace().collect::<Vec<&str>>())[1];
-        let parent_hash = (content[1].split_whitespace().collect::<Vec<&str>>())[1];
+        let message: String;
+        let tree_hash: &str;
+        let mut parent_hash = "";
+
+        if content.len() == 2 {
+            tree_hash = (content[0].split_whitespace().collect::<Vec<&str>>())[1];
+            message = content[1].to_string();
+        } else if content.len() == 3 {
+            tree_hash = (content[0].split_whitespace().collect::<Vec<&str>>())[1];
+            parent_hash = (content[1].split_whitespace().collect::<Vec<&str>>())[1];
+            message = content[2].to_string();
+        } else {
+            return None;
+        }
         
         Some(Self { 
             tree_hash: tree_hash.to_string(),
             parent_hash: parent_hash.to_string(),
             hash: hash.to_string(),
-            message: content[2].to_string()
+            message
         })
     }
     
@@ -82,5 +97,12 @@ impl Commit {
 
     pub fn get_parent_hash(&self) -> &str {
         &self.parent_hash
+    }
+}
+
+impl Display for Commit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let output = format!("hash {}\n\n    {}", self.hash.as_str().yellow(), self.message);
+        write!(f, "{}", output)
     }
 }

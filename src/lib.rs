@@ -69,7 +69,13 @@ pub fn hash_object(path: &str) -> Result<String, NyxError> {
     Ok(object_hash)
 }
 
-fn cat_file(hash: &str) -> Result<String, NyxError> {
+fn cat_file(hash: &str) -> Result<(), NyxError> {
+    let content = read_object_data(hash)?;
+    println!("{}", content);
+    Ok(())
+}
+
+fn read_object_data(hash: &str) -> Result<String, NyxError> {
     // TODO: In every directory callable
     let path: PathBuf = [".nyx", "objects", &hash[..2], &hash[2..]].iter().collect();
     let content = fs::read(path)?;
@@ -80,7 +86,6 @@ fn cat_file(hash: &str) -> Result<String, NyxError> {
 
     let content = str::from_utf8(&content)?;
 
-    println!("{}", content);
     Ok(content.to_string())
 }
 
@@ -114,10 +119,10 @@ fn commit(message: &str) {
 fn log() {
     // TODO: implement Commit::from_head() & Tree::from_hash()
     let mut commit = Commit::from_head();
-
+    
     while let Some(c) = &commit {
-        println!("{}", c.get_content());
-        print!("\n\n--------------------------------------------------\n\n");
+        // TODO: Implement display formatter
+        println!("{}\n", c);
         commit = Commit::from_hash(&c.get_parent_hash());
     }
 }
