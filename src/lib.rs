@@ -117,11 +117,9 @@ fn commit(message: &str) {
 }
 
 fn log() {
-    // TODO: implement Commit::from_head() & Tree::from_hash()
     let mut commit = Commit::from_head();
     
     while let Some(c) = &commit {
-        // TODO: Implement display formatter
         println!("{}\n", c);
         commit = Commit::from_hash(&c.get_parent_hash());
     }
