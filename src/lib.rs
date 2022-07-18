@@ -28,7 +28,7 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
             NyxCommand::Init => {
                 if let Ok(_) = init() {
                     let nyx_dir = env::current_dir().unwrap().join(".nyx");
-                    println!("Inizialized empty nyx repository in {:?}.", nyx_dir);
+                    println!("Initialized empty nyx repository in {:?}.", nyx_dir);
                 }
             }
             NyxCommand::HashObject { path } => _ = hash_object(path)?,
