@@ -26,18 +26,28 @@ use file_system::NyxFileSystem;
 
 // TODO: Encapsulate command matching logic and check if repo alredy setup
 pub fn run(cli: NyxCli) -> Result<(), NyxError> {
-    if !NyxFileSystem::is_in_nyx_repository() {
-        eprintln!("Not a nyx repository (or any of the parent directories)");
-        std::process::exit(1);
+    let file_system = NyxFileSystem::new();
+    if !file_system.is_repository() {
+        match &cli.command {
+            Some(command) => match command {
+                NyxCommand::Init => {
+                    if let Ok(_) = init() {
+                        let nyx_dir = env::current_dir().unwrap().join(".nyx");
+                        println!("Initialized empty nyx repository in {:?}.", nyx_dir);
+                        return Ok(());
+                    }
+                },
+                _ => {
+                    eprintln!("Not a nyx repository (or any of the parent directories)");
+                    std::process::exit(1);
+                },
+            }
+            _ => (),
+        }
     }
+
     match &cli.command {
         Some(command) => match command {
-            NyxCommand::Init => {
-                if let Ok(_) = init() {
-                    let nyx_dir = env::current_dir().unwrap().join(".nyx");
-                    println!("Initialized empty nyx repository in {:?}.", nyx_dir);
-                }
-            }
             NyxCommand::HashObject { path } => _ = hash_object(path)?,
             NyxCommand::CatFile { hash } => _ = cat_file(hash)?,
             NyxCommand::Add { paths } => add(paths.deref().to_vec())?,
@@ -45,6 +55,10 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
             NyxCommand::Commit { message } => commit(message),
             NyxCommand::Status => status(),
             NyxCommand::Log => log(),
+            NyxCommand::Init => {
+                eprintln!("Repository already initialized");
+                std::process::exit(1);
+            }
         },
         None => println!("Unknown command!"),
     };

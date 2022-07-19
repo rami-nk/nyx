@@ -1,20 +1,38 @@
 use std::env;
 
-pub struct NyxFileSystem; 
+pub struct NyxFileSystem {
+    root_dir: String,
+    is_repo: bool,
+}
 
 impl NyxFileSystem {
-    pub fn is_in_nyx_repository() -> bool {
+    pub fn new() -> Self {
         let mut path = env::current_dir().unwrap();
+        let mut root_dir = "";
         
-        loop {
+        let is_repo = loop {
             let exists = path.join(".nyx").exists();
             if exists {
-                return true;
+                root_dir = path.to_str().unwrap();
+                break true;
             }
             let success = path.pop();
             if !success {
-                return false;
+                break false;
             }
+        };
+        
+        Self { 
+            root_dir: root_dir.to_string(),
+            is_repo
         }
+    }
+
+    pub fn is_repository(&self) -> bool {
+        self.is_repo
+    }
+    
+    pub fn get_root_dir(&self) -> &str {
+        &self.root_dir
     }
 }
