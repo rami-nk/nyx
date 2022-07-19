@@ -171,7 +171,7 @@ fn log() {
 
 fn status() {
     // TODO: Error: Empty file is displayed as staged
-    let root_dir = env::current_dir().unwrap();
+    let root_dir = PathBuf::from(FILE_SYSTEM.get_root_dir());
     let index = Index::new();
     let mut unstaged = DisplayStrings::new(4, "red");
     let mut modified = DisplayStrings::new(4, "red");

@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use crate::errors::NyxError;
-use crate::generate_object;
+use crate::{generate_object, FILE_SYSTEM};
 use crate::object_type::NyxObjectType;
 use crate::tree::Tree;
 use crate::traits::Byte;
@@ -16,7 +16,9 @@ pub struct Index {
 
 impl Index {
     pub fn new() -> Self {
-        let path = [".nyx", "index"].iter().collect::<PathBuf>();
+        let path = PathBuf::from(FILE_SYSTEM.get_root_dir())
+                            .join(".nyx")
+                            .join("index");
         let mut entries = Vec::new();
         if path.exists() {
             let content = fs::read_to_string(&path).unwrap();
