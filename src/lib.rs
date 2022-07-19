@@ -1,7 +1,5 @@
 #![feature(drain_filter)]
-use colored::*;
 use core::panic;
-use std::fmt::Display;
 use format_bytes::format_bytes;
 use sha1::{Digest, Sha1};
 use std::ops::Deref;
@@ -15,12 +13,14 @@ mod object_type;
 mod tree;
 mod traits;
 mod commit;
+mod display_strings;
 
 use cl_args::{NyxCli, NyxCommand};
 use errors::NyxError;
 use index::{Index, NyxFileState};
 use object_type::NyxObjectType;
 use commit::Commit;
+use display_strings::DisplayStrings;
 
 // TODO: Encapsulate command matching logic and check if repo alredy setup
 pub fn run(cli: NyxCli) -> Result<(), NyxError> {
@@ -154,34 +154,14 @@ fn status() {
     let mut staged = DisplayStrings::with_offset_and_color(4, "green");
     _status(&root_dir, &root_dir, &index, &mut unstaged, &mut modified, &mut staged);
     
-    if !staged.strings.is_empty() {
+    if staged.is_not_empty() {
         println!("Changes to be commited:\n{staged}");
     }
-    if !modified.strings.is_empty() {
+    if modified.is_not_empty() {
         println!("Files not staged for commit:\n{modified}");
     }
-    if !unstaged.strings.is_empty() {
+    if unstaged.is_not_empty() {
         println!("Untracked files:\n{unstaged}");
-    }
-}
-
-struct DisplayStrings {
-    strings: Vec<String>,
-    offset: usize,
-    color: String,
-}
-
-impl DisplayStrings {
-   fn with_offset_and_color(offset: usize, color: &str) -> Self {
-       Self { strings: Vec::new(), offset: offset, color: String::from(color) }
-   } 
-}
-
-impl Display for DisplayStrings {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.strings.iter().fold(Ok(()), |result, string| {
-            result.and_then(|_| writeln!(f, "{}{}", " ".repeat(self.offset), string.as_str().color(&*self.color)))
-        })
     }
 }
 
@@ -203,9 +183,9 @@ fn _status(fixed_root: &PathBuf, root: &PathBuf, index: &Index, unstaged: &mut D
             let hash = calculate_sha1(&content);
             let path_str = path.strip_prefix(fixed_root).unwrap().to_str().unwrap(); 
             match index.get_status(&hash, path_str) {
-                NyxFileState::Staged =>   staged.strings.push(path_str.to_string()),
-                NyxFileState::Modified => modified.strings.push(path_str.to_string()),
-                NyxFileState::Unstaged => unstaged.strings.push(path_str.to_string()),
+                NyxFileState::Staged =>   staged.push(path_str),
+                NyxFileState::Modified => modified.push(path_str),
+                NyxFileState::Unstaged => unstaged.push(path_str),
                 _ => (),
             }
         }
