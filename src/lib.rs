@@ -5,6 +5,7 @@ use sha1::{Digest, Sha1};
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::{fs, str, env};
+use lazy_static::lazy_static;
 
 pub mod cl_args;
 mod errors;
@@ -24,10 +25,13 @@ use commit::Commit;
 use display_strings::DisplayStrings;
 use file_system::NyxFileSystem;
 
+lazy_static! {
+    static ref FILE_SYSTEM: NyxFileSystem = NyxFileSystem::new();
+}
+
 // TODO: Encapsulate command matching logic and check if repo alredy setup
 pub fn run(cli: NyxCli) -> Result<(), NyxError> {
-    let file_system = NyxFileSystem::new();
-    if !file_system.is_repository() {
+    if !FILE_SYSTEM.is_repository() {
         match &cli.command {
             Some(command) => match command {
                 NyxCommand::Init => {

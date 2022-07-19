@@ -206,6 +206,7 @@ dependencies = [
  "colored",
  "format-bytes",
  "hex",
+ "lazy_static",
  "sha-1",
 ]
 
