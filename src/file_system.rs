@@ -19,6 +19,10 @@ impl NyxFileSystem {
         String::from("HEAD")
     }
 
+    fn index_file() -> String {
+        String::from("index")
+    }
+
     pub fn new() -> Self {
         let mut path = env::current_dir().unwrap();
         let mut root_dir = "";
@@ -63,5 +67,9 @@ impl NyxFileSystem {
     
     pub fn get_head_path(&self) -> PathBuf {
         self.root_dir.join(NyxFileSystem::nyx_dir()).join(NyxFileSystem::head_file())
+    }
+    
+    pub fn get_index_path(&self) -> PathBuf {
+        self.root_dir.join(NyxFileSystem::nyx_dir()).join(NyxFileSystem::index_file())
     }
 }

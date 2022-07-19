@@ -16,9 +16,7 @@ pub struct Index {
 
 impl Index {
     pub fn new() -> Self {
-        let path = PathBuf::from(FILE_SYSTEM.get_root_dir())
-                            .join(".nyx")
-                            .join("index");
+        let path = FILE_SYSTEM.get_index_path();
         let mut entries = Vec::new();
         if path.exists() {
             let content = fs::read_to_string(&path).unwrap();
