@@ -37,9 +37,15 @@ impl NyxFileSystem {
         &self.root_dir
     }
     
-    pub fn get_objects_path(&self, dir_name: &str, file_name: &str) -> PathBuf {
+    pub fn get_object_path(&self, dir_name: &str, file_name: &str) -> PathBuf {
+        self.get_objects_dir_path().join(dir_name).join(file_name)
+    }
+    
+    pub fn get_objects_dir_path(&self) -> PathBuf {
         self.get_root_dir().join(".nyx").join("objects")
-                                        .join(dir_name)
-                                        .join(file_name)
+    }
+    
+    pub fn get_object_dir_path(&self, dir_name: &str) -> PathBuf {
+            self.get_objects_dir_path().join(dir_name)
     }
 }

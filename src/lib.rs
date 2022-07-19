@@ -80,10 +80,6 @@ pub fn init() -> Result<(), NyxError> {
 
 fn get_object_hash(path: &str) -> String {
     // TODO: Should be callable from all dirs within the repo
-    if !Path::new(".nyx").join("objects").exists() {
-        // TODO: logging concept
-        panic!("Not in a nyx repository");
-    }
 
     let content = fs::read(PathBuf::from(path)).unwrap();
     let object_hash = generate_object(&content, NyxObjectType::Blob);
@@ -104,7 +100,7 @@ fn cat_file(hash: &str) -> Result<(), NyxError> {
 }
 
 fn read_object_data(hash: &str) -> Result<String, NyxError> {
-    let path: PathBuf = FILE_SYSTEM.get_objects_path(&hash[..2], &hash[2..]);
+    let path: PathBuf = FILE_SYSTEM.get_object_path(&hash[..2], &hash[2..]);
     let content = fs::read(path)?;
     let index = &content.iter().position(|x| *x == 0).unwrap();
     let content = &content[*index..];
@@ -215,7 +211,7 @@ fn generate_object(content: &[u8], object_type: NyxObjectType) -> String {
     let content = append_object_header(content, object_type);
     let hash = calculate_sha1(&content);
 
-    let object_dir_path: PathBuf = [".nyx", "objects", &hash[..2]].iter().collect();
+    let object_dir_path: PathBuf = FILE_SYSTEM.get_object_dir_path(&hash[..2]);
 
     if !object_dir_path.exists() {
         fs::create_dir(&object_dir_path).unwrap();
