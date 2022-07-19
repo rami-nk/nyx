@@ -1,5 +1,4 @@
 #![feature(drain_filter, fs_try_exists)]
-use core::panic;
 use format_bytes::format_bytes;
 use sha1::{Digest, Sha1};
 use std::ops::Deref;
@@ -79,8 +78,6 @@ pub fn init() -> Result<(), NyxError> {
 }
 
 fn get_object_hash(path: &str) -> String {
-    // TODO: Should be callable from all dirs within the repo
-
     let content = fs::read(PathBuf::from(path)).unwrap();
     let object_hash = generate_object(&content, NyxObjectType::Blob);
 
