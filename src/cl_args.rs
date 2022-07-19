@@ -14,7 +14,7 @@ pub enum NyxCommand {
     /// Adds one or many files to staging area
     Add {
         #[clap(value_parser)]
-        files: Vec<String>,
+        paths: Vec<String>,
     },
     /// Record changes to the repository
     Commit {

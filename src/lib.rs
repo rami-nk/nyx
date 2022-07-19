@@ -1,6 +1,7 @@
 #![feature(drain_filter)]
 use colored::*;
 use core::panic;
+use std::fmt::Display;
 use format_bytes::format_bytes;
 use sha1::{Digest, Sha1};
 use std::ops::Deref;
@@ -33,7 +34,7 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
             }
             NyxCommand::HashObject { path } => _ = hash_object(path)?,
             NyxCommand::CatFile { hash } => _ = cat_file(hash)?,
-            NyxCommand::Add { files } => add(files.deref().to_vec())?,
+            NyxCommand::Add { paths } => add(paths.deref().to_vec())?,
             NyxCommand::LsFile => ls_file(),
             NyxCommand::Commit { message } => commit(message),
             NyxCommand::Status => status(),
@@ -53,19 +54,22 @@ pub fn init() -> Result<(), NyxError> {
     Ok(())
 }
 
-pub fn hash_object(path: &str) -> Result<String, NyxError> {
+fn get_object_hash(path: &str) -> String {
     // TODO: Should be callable from all dirs within the repo
     if !Path::new(".nyx").join("objects").exists() {
         // TODO: logging concept
         panic!("Not in a nyx repository");
     }
 
-    let content = fs::read(PathBuf::from(path))?;
-
+    let content = fs::read(PathBuf::from(path)).unwrap();
     let object_hash = generate_object(&content, NyxObjectType::Blob);
 
-    println!("{object_hash}");
+    return object_hash;
+}
 
+pub fn hash_object(path: &str) -> Result<String, NyxError> {
+    let object_hash = get_object_hash(path);
+    println!("{object_hash}");
     Ok(object_hash)
 }
 
@@ -80,7 +84,6 @@ fn read_object_data(hash: &str) -> Result<String, NyxError> {
     let path: PathBuf = [".nyx", "objects", &hash[..2], &hash[2..]].iter().collect();
     let content = fs::read(path)?;
 
-    // Remove header
     let index = &content.iter().position(|x| *x == 0).unwrap();
     let content = &content[*index..];
 
@@ -89,15 +92,33 @@ fn read_object_data(hash: &str) -> Result<String, NyxError> {
     Ok(content.to_string())
 }
 
-fn add(files: Vec<String>) -> Result<(), NyxError> {
+fn add(paths: Vec<String>) -> Result<(), NyxError> {
     let mut index = Index::new();
 
-    for file in files {
-        let sha1 = hash_object(&file)?;
-        index.add(&sha1, &file).unwrap();
+    for path in paths {
+        add_recursive(&path, &mut index);
     }
-
     Ok(())
+}
+
+fn add_recursive(path: &str, index: &mut Index) {
+    let path = PathBuf::from(path);
+    if path.is_dir() {
+        if path.ends_with(".nyx") ||
+           path.ends_with(".git") ||
+           path.ends_with("target") ||
+           path.ends_with(".vscode") {
+           return;
+        }
+        for p in fs::read_dir(&path).unwrap() {
+            let relative_path = path.join(p.unwrap().file_name());
+            add_recursive(relative_path.to_str().unwrap(), index);
+        }
+    } else {
+        let path = path.to_str().unwrap();
+        let sha1 = get_object_hash(path);
+        index.add(&sha1, path).unwrap();
+    }
 }
 
 fn ls_file() {
@@ -128,10 +149,43 @@ fn status() {
     // TODO: Error: Empty file is displayed as staged
     let root_dir = env::current_dir().unwrap();
     let index = Index::new();
-    _status(&root_dir, &root_dir, &index);
+    let mut unstaged = DisplayStrings::with_offset_and_color(4, "red");
+    let mut modified = DisplayStrings::with_offset_and_color(4, "red");
+    let mut staged = DisplayStrings::with_offset_and_color(4, "green");
+    _status(&root_dir, &root_dir, &index, &mut unstaged, &mut modified, &mut staged);
+    
+    if !staged.strings.is_empty() {
+        println!("Changes to be commited:\n{staged}");
+    }
+    if !modified.strings.is_empty() {
+        println!("Files not staged for commit:\n{modified}");
+    }
+    if !unstaged.strings.is_empty() {
+        println!("Untracked files:\n{unstaged}");
+    }
 }
 
-fn _status(fixed_root: &PathBuf, root: &PathBuf, index: &Index) {
+struct DisplayStrings {
+    strings: Vec<String>,
+    offset: usize,
+    color: String,
+}
+
+impl DisplayStrings {
+   fn with_offset_and_color(offset: usize, color: &str) -> Self {
+       Self { strings: Vec::new(), offset: offset, color: String::from(color) }
+   } 
+}
+
+impl Display for DisplayStrings {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.strings.iter().fold(Ok(()), |result, string| {
+            result.and_then(|_| writeln!(f, "{}{}", " ".repeat(self.offset), string.as_str().color(&*self.color)))
+        })
+    }
+}
+
+fn _status(fixed_root: &PathBuf, root: &PathBuf, index: &Index, unstaged: &mut DisplayStrings, modified: &mut DisplayStrings, staged: &mut DisplayStrings) {
     for path in fs::read_dir(root).unwrap() {
         let path = &path.unwrap().path();
         // TODO: create .nyxigore file
@@ -142,16 +196,16 @@ fn _status(fixed_root: &PathBuf, root: &PathBuf, index: &Index) {
             continue;
         }
         if path.is_dir() {
-            _status(fixed_root, &root.join(path), index);
+            _status(fixed_root, &root.join(path), index, unstaged, modified, staged);
         } else {
             let content = fs::read_to_string(path).unwrap();
             let content = append_object_header(content.as_bytes(), NyxObjectType::Blob);
             let hash = calculate_sha1(&content);
             let path_str = path.strip_prefix(fixed_root).unwrap().to_str().unwrap(); 
             match index.get_status(&hash, path_str) {
-                NyxFileState::Staged =>   println!("{}", path_str.green()),
-                NyxFileState::Modified => println!("{}", path_str.blue()),
-                NyxFileState::Unstaged => println!("{}", path_str.red()),
+                NyxFileState::Staged =>   staged.strings.push(path_str.to_string()),
+                NyxFileState::Modified => modified.strings.push(path_str.to_string()),
+                NyxFileState::Unstaged => unstaged.strings.push(path_str.to_string()),
                 _ => (),
             }
         }
