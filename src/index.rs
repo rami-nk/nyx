@@ -27,9 +27,13 @@ impl Index {
                 .collect();
             for entry in raw_entries {
                 let splits: Vec<&str> = entry.split_whitespace().collect();
+
+                // TODO: Exception handling
+                let file_state: NyxFileState = NyxFileState::from_u8(splits[2].parse().unwrap());
                 entries.push(IndexEntry {
                     hash: splits[0].to_string(),
                     path: splits[1].to_string(),
+                    state: file_state,
                 });
             }
         }
@@ -46,28 +50,41 @@ impl Index {
         self.entries.push(IndexEntry {
             hash: hash.to_string(),
             path: path.to_string(),
+            state: NyxFileState::Staged,
         });
-
+        
+        self.write_content();
+        Ok(())
+    }
+    
+    pub fn write_tree(&mut self) -> Tree {
+        self.entries.sort_by(|e1, e2| e1.path.cmp(&e2.path));
+        // TODO: Check for errors befor writing
+        self.mark_as_committed_and_write();
+        let tree = Index::write_tree_recursiv(&mut self.entries);
+        tree
+    }
+    
+    fn mark_as_committed_and_write(&mut self) {
+        for mut entry in &mut self.entries {
+            entry.state = NyxFileState::Committed;
+        }
+        self.write_content();
+    }
+    
+    fn write_content(&self) {
         let mut file = fs::OpenOptions::new()
             .create(true)
             .write(true)
             .open(&self.path)
             .unwrap();
 
-        let entries_bytes: Vec<Vec<u8>> = self
-            .entries
+        let entries_bytes: Vec<Vec<u8>> = self.entries
             .iter()
             .map(|entry| format_bytes!(b"{}\n", entry.as_bytes()))
             .collect();
         let entries_bytes = entries_bytes.concat();
         file.write_all(&entries_bytes).unwrap();
-        Ok(())
-    }
-    
-    pub fn write_tree(&mut self) -> Tree {
-        self.entries.sort_by(|e1, e2| e1.path.cmp(&e2.path));
-        let tree = Index::write_tree_recursiv(&mut self.entries);
-        tree
     }
     
     fn write_tree_recursiv(index: &mut Vec<IndexEntry>) -> Tree {
@@ -118,39 +135,55 @@ impl Index {
     fn contains_hash(&self, hash: &str) -> bool {
         self.entries.iter().any(|entry| entry.hash == hash)
     }
-    
-    pub fn contains_file(&self, path: &str) -> bool {
-        self.entries.iter().any(|entry| entry.path == path)
-    }
   
     pub fn get_status(&self, hash: &str, path: &str) -> NyxFileState {
-        if self.contains_hash(hash) {
-            return NyxFileState::Staged;
+        match self.entries.iter().find(|e| e.hash == hash) {
+            Some(entry) => entry.state.clone(),
+            None => match self.entries.iter().find(|e| e.path == path) {
+                Some(_) => NyxFileState::Modified,
+                None => NyxFileState::Unstaged,
+            },
         }
-        if self.contains_file(path) {
-            return NyxFileState::Modified;
-        }
-        NyxFileState::Unstaged
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum NyxFileState {
-    Unstaged,
-    Staged,
-    Modified,
+    Invalid = 0,
+    Unstaged = 1,
+    Staged = 2,
+    Modified = 3,
+    Committed = 4,
+}
+
+// TODO: Search for safe approach
+impl NyxFileState {
+    fn from_u8(u: u8) -> NyxFileState {
+        match u {
+            1 => NyxFileState::Unstaged,
+            2 => NyxFileState::Staged,
+            3 => NyxFileState::Modified,
+            4 => NyxFileState::Committed,
+            _ => NyxFileState::Invalid,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
 struct IndexEntry {
     hash: String,
     path: String,
+    state: NyxFileState,
+}
+
+impl Byte for IndexEntry {
+    fn as_bytes(&self) -> Vec<u8> {
+        let state = self.state as u8;
+        format_bytes!(b"{} {} {}", self.hash.as_bytes(), self.path.as_bytes(), state)
+    }
 }
 
 impl IndexEntry {
-    fn as_bytes(&self) -> Vec<u8> {
-        format_bytes!(b"{} {}", self.hash.as_bytes(), self.path.as_bytes())
-    }
-    
     fn has_dir(&self) -> bool {
         self.path.contains("/")
     }

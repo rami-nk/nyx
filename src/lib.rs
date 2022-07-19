@@ -108,7 +108,6 @@ fn ls_file() {
 
 fn commit(message: &str) {
     // TODO: Check for ustaged changes
-    // TODO: Remove all elements form staging area
     let mut index = Index::new();
     let tree = index.write_tree();
     let mut commit = Commit::new(&tree.hash, message);
@@ -153,6 +152,7 @@ fn _status(fixed_root: &PathBuf, root: &PathBuf, index: &Index) {
                 NyxFileState::Staged =>   println!("{}", path_str.green()),
                 NyxFileState::Modified => println!("{}", path_str.blue()),
                 NyxFileState::Unstaged => println!("{}", path_str.red()),
+                _ => (),
             }
         }
     }
