@@ -1,4 +1,4 @@
-#![feature(drain_filter)]
+#![feature(drain_filter, fs_try_exists)]
 use core::panic;
 use format_bytes::format_bytes;
 use sha1::{Digest, Sha1};
@@ -14,6 +14,7 @@ mod tree;
 mod traits;
 mod commit;
 mod display_strings;
+mod file_system;
 
 use cl_args::{NyxCli, NyxCommand};
 use errors::NyxError;
@@ -21,9 +22,14 @@ use index::{Index, NyxFileState};
 use object_type::NyxObjectType;
 use commit::Commit;
 use display_strings::DisplayStrings;
+use file_system::NyxFileSystem;
 
 // TODO: Encapsulate command matching logic and check if repo alredy setup
 pub fn run(cli: NyxCli) -> Result<(), NyxError> {
+    if !NyxFileSystem::is_in_nyx_repository() {
+        eprintln!("Not a nyx repository (or any of the parent directories)");
+        std::process::exit(1);
+    }
     match &cli.command {
         Some(command) => match command {
             NyxCommand::Init => {
