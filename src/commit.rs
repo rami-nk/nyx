@@ -1,11 +1,9 @@
 use std::fmt::Display;
-use std::path::PathBuf;
 use std::fs;
-
 use colored::Colorize;
 
 use crate::object_type::NyxObjectType;
-use crate::{generate_object, read_object_data};
+use crate::{generate_object, read_object_data, FILE_SYSTEM};
 
 #[derive(Debug)]
 pub struct Commit {
@@ -17,7 +15,7 @@ pub struct Commit {
 
 impl Commit {
     pub fn new(tree_hash: &str, message: &str) -> Self {
-        let head_path: PathBuf = [".nyx", "HEAD"].iter().collect();
+        let head_path = FILE_SYSTEM.get_head_path();
         let mut parent_hash = String::new();
         if head_path.exists() {
             parent_hash = fs::read_to_string(head_path).unwrap();
@@ -32,7 +30,7 @@ impl Commit {
     }
     
     pub fn from_head() -> Option<Self> {
-        let head_path: PathBuf = [".nyx", "HEAD"].iter().collect();
+        let head_path = FILE_SYSTEM.get_head_path();
         let mut hash = String::new();
         if head_path.exists() {
             hash = fs::read_to_string(head_path).unwrap();
@@ -42,7 +40,6 @@ impl Commit {
     }
     
     pub fn get_content(&self) -> String {
-        // TODO: Delimter \0 as constant
         let mut content = format!("tree {}\n", self.tree_hash);
         if !self.parent_hash.is_empty() {
             content = format!("{}parent {}\n", content, self.parent_hash);
@@ -87,7 +84,7 @@ impl Commit {
     pub fn write(&mut self) {
         self.hash = generate_object(self.get_content().as_bytes(), NyxObjectType::Commit);
 
-        let head_path: PathBuf = [".nyx", "HEAD"].iter().collect();
+        let head_path = FILE_SYSTEM.get_head_path();
         fs::write(head_path, &self.hash).unwrap();
     }
     
