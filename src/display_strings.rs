@@ -8,7 +8,7 @@ pub struct DisplayStrings {
 }
 
 impl DisplayStrings {
-   pub fn with_offset_and_color(offset: usize, color: &str) -> Self {
+   pub fn new(offset: usize, color: &str) -> Self {
        Self { strings: Vec::new(), offset: offset, color: String::from(color) }
    } 
    
@@ -16,8 +16,19 @@ impl DisplayStrings {
        self.strings.push(string.to_string());
    }
    
+   pub fn try_print_with_prefix(&self, prefix: &str) {
+       if self.is_not_empty() {
+           println!("{}", prefix);
+           println!("{}", self);
+       }
+   }
+   
    pub fn is_not_empty(&self) -> bool {
        !self.strings.is_empty()
+   }
+
+   pub fn is_empty(&self) -> bool {
+       self.strings.is_empty()
    }
 }
 

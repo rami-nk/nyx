@@ -149,20 +149,17 @@ fn status() {
     // TODO: Error: Empty file is displayed as staged
     let root_dir = env::current_dir().unwrap();
     let index = Index::new();
-    let mut unstaged = DisplayStrings::with_offset_and_color(4, "red");
-    let mut modified = DisplayStrings::with_offset_and_color(4, "red");
-    let mut staged = DisplayStrings::with_offset_and_color(4, "green");
+    let mut unstaged = DisplayStrings::new(4, "red");
+    let mut modified = DisplayStrings::new(4, "red");
+    let mut staged = DisplayStrings::new(4, "green");
     _status(&root_dir, &root_dir, &index, &mut unstaged, &mut modified, &mut staged);
     
-    if staged.is_not_empty() {
-        println!("Changes to be commited:\n{staged}");
+    if staged.is_empty() && modified.is_empty() && unstaged.is_empty() {
+        println!("Nothing to commit, working tree clean");
     }
-    if modified.is_not_empty() {
-        println!("Files not staged for commit:\n{modified}");
-    }
-    if unstaged.is_not_empty() {
-        println!("Untracked files:\n{unstaged}");
-    }
+    staged.try_print_with_prefix("Changes to be committed:");
+    modified.try_print_with_prefix("Files not staged for commit:");
+    unstaged.try_print_with_prefix("Untracked files:");
 }
 
 fn _status(fixed_root: &PathBuf, root: &PathBuf, index: &Index, unstaged: &mut DisplayStrings, modified: &mut DisplayStrings, staged: &mut DisplayStrings) {
