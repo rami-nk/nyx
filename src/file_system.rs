@@ -1,7 +1,8 @@
+use std::path::PathBuf;
 use std::env;
 
 pub struct NyxFileSystem {
-    root_dir: String,
+    root_dir: PathBuf,
     is_repo: bool,
 }
 
@@ -23,7 +24,7 @@ impl NyxFileSystem {
         };
         
         Self { 
-            root_dir: root_dir.to_string(),
+            root_dir: PathBuf::from(root_dir),
             is_repo
         }
     }
@@ -32,7 +33,13 @@ impl NyxFileSystem {
         self.is_repo
     }
     
-    pub fn get_root_dir(&self) -> &str {
+    pub fn get_root_dir(&self) -> &PathBuf {
         &self.root_dir
+    }
+    
+    pub fn get_objects_path(&self, dir_name: &str, file_name: &str) -> PathBuf {
+        self.get_root_dir().join(".nyx").join("objects")
+                                        .join(dir_name)
+                                        .join(file_name)
     }
 }

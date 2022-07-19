@@ -104,10 +104,8 @@ fn cat_file(hash: &str) -> Result<(), NyxError> {
 }
 
 fn read_object_data(hash: &str) -> Result<String, NyxError> {
-    // TODO: In every directory callable
-    let path: PathBuf = [".nyx", "objects", &hash[..2], &hash[2..]].iter().collect();
+    let path: PathBuf = FILE_SYSTEM.get_objects_path(&hash[..2], &hash[2..]);
     let content = fs::read(path)?;
-
     let index = &content.iter().position(|x| *x == 0).unwrap();
     let content = &content[*index..];
 
@@ -170,8 +168,8 @@ fn log() {
 }
 
 fn status() {
-    // TODO: Error: Empty file is displayed as staged
-    let root_dir = PathBuf::from(FILE_SYSTEM.get_root_dir());
+    // TODO: Error: Empty file is not displayed as untracked
+    let root_dir = FILE_SYSTEM.get_root_dir();
     let index = Index::new();
     let mut unstaged = DisplayStrings::new(4, "red");
     let mut modified = DisplayStrings::new(4, "red");
