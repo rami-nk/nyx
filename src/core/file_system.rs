@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use std::env;
+use std::path::PathBuf;
 
 pub struct NyxFileSystem {
     root_dir: PathBuf,
@@ -26,7 +26,7 @@ impl NyxFileSystem {
     pub fn new() -> Self {
         let mut path = env::current_dir().unwrap();
         let mut root_dir = "";
-        
+
         let is_repo = loop {
             let exists = path.join(NyxFileSystem::nyx_dir()).exists();
             if exists {
@@ -38,38 +38,44 @@ impl NyxFileSystem {
                 break false;
             }
         };
-        
-        Self { 
+
+        Self {
             root_dir: PathBuf::from(root_dir),
-            is_repo
+            is_repo,
         }
     }
 
     pub fn is_repository(&self) -> bool {
         self.is_repo
     }
-    
+
     pub fn get_root_dir(&self) -> &PathBuf {
         &self.root_dir
     }
 
     pub fn get_objects_dir_path(&self) -> PathBuf {
-        self.get_root_dir().join(NyxFileSystem::nyx_dir()).join(NyxFileSystem::objects_dir())
+        self.get_root_dir()
+            .join(NyxFileSystem::nyx_dir())
+            .join(NyxFileSystem::objects_dir())
     }
-    
+
     pub fn get_object_path(&self, dir_name: &str, file_name: &str) -> PathBuf {
         self.get_objects_dir_path().join(dir_name).join(file_name)
     }
-    
+
     pub fn get_object_dir_path(&self, dir_name: &str) -> PathBuf {
-            self.get_objects_dir_path().join(dir_name)
+        self.get_objects_dir_path().join(dir_name)
     }
-    
+
     pub fn get_head_path(&self) -> PathBuf {
-        self.root_dir.join(NyxFileSystem::nyx_dir()).join(NyxFileSystem::head_file())
+        self.root_dir
+            .join(NyxFileSystem::nyx_dir())
+            .join(NyxFileSystem::head_file())
     }
-    
+
     pub fn get_index_path(&self) -> PathBuf {
-        self.root_dir.join(NyxFileSystem::nyx_dir()).join(NyxFileSystem::index_file())
+        self.root_dir
+            .join(NyxFileSystem::nyx_dir())
+            .join(NyxFileSystem::index_file())
     }
 }

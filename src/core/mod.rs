@@ -1,9 +1,9 @@
+pub mod cl_args;
 pub mod commit;
+pub mod display_strings;
+pub mod errors;
+pub mod file_system;
 pub mod index;
 pub mod object_type;
 pub mod traits;
 pub mod tree;
-pub mod file_system;
-pub mod cl_args;
-pub mod errors;
-pub mod display_strings;

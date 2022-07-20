@@ -14,7 +14,12 @@ pub struct IndexEntry {
 impl Byte for IndexEntry {
     fn as_bytes(&self) -> Vec<u8> {
         let state = self.state as u8;
-        format_bytes!(b"{} {} {}", self.hash.as_bytes(), self.path.as_bytes(), state)
+        format_bytes!(
+            b"{} {} {}",
+            self.hash.as_bytes(),
+            self.path.as_bytes(),
+            state
+        )
     }
 }
 

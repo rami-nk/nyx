@@ -1,16 +1,16 @@
 use format_bytes::format_bytes;
-use std::{fs, vec};
 use std::io::Write;
 use std::path::PathBuf;
+use std::{fs, vec};
 
 use crate::core::errors::NyxError;
 use crate::core::object_type::NyxObjectType;
 use crate::core::tree::tree::Tree;
 use crate::{generate_object, FILE_SYSTEM};
 
-use super::file_state::NyxFileState;
-use super::entry::IndexEntry;
 use super::super::traits::Byte;
+use super::entry::IndexEntry;
+use super::file_state::NyxFileState;
 
 pub struct Index {
     path: PathBuf,
@@ -55,11 +55,11 @@ impl Index {
             path: path.to_string(),
             state: NyxFileState::Staged,
         });
-        
+
         self.write_content();
         Ok(())
     }
-    
+
     pub fn write_tree(&mut self) -> Tree {
         self.entries.sort_by(|e1, e2| e1.path.cmp(&e2.path));
         // TODO: Check for errors befor writing
@@ -67,14 +67,14 @@ impl Index {
         let tree = Index::write_tree_recursiv(&mut self.entries);
         tree
     }
-    
+
     fn mark_as_committed_and_write(&mut self) {
         for mut entry in &mut self.entries {
             entry.state = NyxFileState::Committed;
         }
         self.write_content();
     }
-    
+
     fn write_content(&self) {
         let mut file = fs::OpenOptions::new()
             .create(true)
@@ -82,31 +82,31 @@ impl Index {
             .open(&self.path)
             .unwrap();
 
-        let entries_bytes: Vec<Vec<u8>> = self.entries
+        let entries_bytes: Vec<Vec<u8>> = self
+            .entries
             .iter()
             .map(|entry| format_bytes!(b"{}\n", entry.as_bytes()))
             .collect();
         let entries_bytes = entries_bytes.concat();
         file.write_all(&entries_bytes).unwrap();
     }
-    
+
     fn write_tree_recursiv(index: &mut Vec<IndexEntry>) -> Tree {
         let mut tree = Tree::new();
-        
+
         let mut idx = 0;
         while idx < index.len() {
             if index[idx].has_dir() {
-
                 let i_x = index[idx].path.find("/").unwrap();
                 let mut dir = index[idx].path.clone();
                 dir.replace_range(i_x.., "");
 
                 let prefix = format!("{}/", dir);
                 index[idx].path = index[idx].path.replacen(&prefix, "", 1);
-                
+
                 let mut same_dir_entries = vec![index[idx].clone()];
-                
-                for j in idx+1..index.len() {
+
+                for j in idx + 1..index.len() {
                     let entry = &index[j];
                     if entry.path.starts_with(&prefix) {
                         let mut entry = entry.clone();
@@ -122,7 +122,6 @@ impl Index {
                 new_tree.path = dir;
 
                 tree.add_tree(new_tree);
-
             } else {
                 tree.add_blob(&index[idx].hash, &index[idx].path);
             }
@@ -131,14 +130,14 @@ impl Index {
 
         let hash = generate_object(&tree.entries.as_bytes()[..], NyxObjectType::Tree);
         tree.set_hash(&hash);
-        
+
         tree
     }
 
     fn contains_hash(&self, hash: &str) -> bool {
         self.entries.iter().any(|entry| entry.hash == hash)
     }
-  
+
     pub fn get_status(&self, hash: &str, path: &str) -> NyxFileState {
         match self.entries.iter().find(|e| e.hash == hash) {
             Some(entry) => entry.state.clone(),

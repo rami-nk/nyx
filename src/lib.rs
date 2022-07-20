@@ -1,21 +1,21 @@
 #![feature(drain_filter, fs_try_exists)]
 use format_bytes::format_bytes;
+use lazy_static::{__Deref, lazy_static};
 use sha1::{Digest, Sha1};
 use std::path::PathBuf;
-use std::{fs, str, env};
-use lazy_static::{lazy_static, __Deref};
+use std::{env, fs, str};
 
 pub mod core;
 
-use crate::core::file_system::NyxFileSystem;
-use crate::core::commit::*;
-use crate::core::index::index::*;
-use crate::core::index::file_state::NyxFileState;
-use crate::core::object_type::NyxObjectType;
 use crate::core::cl_args::NyxCli;
-use crate::core::errors::NyxError;
 use crate::core::cl_args::NyxCommand;
+use crate::core::commit::*;
 use crate::core::display_strings::DisplayStrings;
+use crate::core::errors::NyxError;
+use crate::core::file_system::NyxFileSystem;
+use crate::core::index::file_state::NyxFileState;
+use crate::core::index::index::*;
+use crate::core::object_type::NyxObjectType;
 
 lazy_static! {
     static ref FILE_SYSTEM: NyxFileSystem = NyxFileSystem::new();
@@ -31,12 +31,12 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
                         println!("Initialized empty nyx repository in {:?}.", nyx_dir);
                         return Ok(());
                     }
-                },
+                }
                 _ => {
                     eprintln!("Not a nyx repository (or any of the parent directories)");
                     std::process::exit(1);
-                },
-            }
+                }
+            },
             _ => (),
         }
     }
@@ -107,11 +107,12 @@ fn add(paths: Vec<String>) -> Result<(), NyxError> {
 fn add_recursive(path: &str, index: &mut Index) {
     let path = PathBuf::from(path);
     if path.is_dir() {
-        if path.ends_with(".nyx") ||
-           path.ends_with(".git") ||
-           path.ends_with("target") ||
-           path.ends_with(".vscode") {
-           return;
+        if path.ends_with(".nyx")
+            || path.ends_with(".git")
+            || path.ends_with("target")
+            || path.ends_with(".vscode")
+        {
+            return;
         }
         for p in fs::read_dir(&path).unwrap() {
             let relative_path = path.join(p.unwrap().file_name());
@@ -141,7 +142,7 @@ fn commit(message: &str) {
 
 fn log() {
     let mut commit = Commit::from_head();
-    
+
     while let Some(c) = &commit {
         println!("{}\n", c);
         commit = Commit::from_hash(&c.get_parent_hash());
@@ -155,8 +156,15 @@ fn status() {
     let mut unstaged = DisplayStrings::new(4, "red");
     let mut modified = DisplayStrings::new(4, "red");
     let mut staged = DisplayStrings::new(4, "green");
-    _status(&root_dir, &root_dir, &index, &mut unstaged, &mut modified, &mut staged);
-    
+    _status(
+        &root_dir,
+        &root_dir,
+        &index,
+        &mut unstaged,
+        &mut modified,
+        &mut staged,
+    );
+
     if staged.is_empty() && modified.is_empty() && unstaged.is_empty() {
         println!("Nothing to commit, working tree clean");
     }
@@ -165,25 +173,40 @@ fn status() {
     unstaged.try_print_with_prefix("Untracked files:");
 }
 
-fn _status(fixed_root: &PathBuf, root: &PathBuf, index: &Index, unstaged: &mut DisplayStrings, modified: &mut DisplayStrings, staged: &mut DisplayStrings) {
+fn _status(
+    fixed_root: &PathBuf,
+    root: &PathBuf,
+    index: &Index,
+    unstaged: &mut DisplayStrings,
+    modified: &mut DisplayStrings,
+    staged: &mut DisplayStrings,
+) {
     for path in fs::read_dir(root).unwrap() {
         let path = &path.unwrap().path();
         // TODO: create .nyxigore file
-        if path.ends_with(".nyx") ||
-           path.ends_with(".git") ||
-           path.ends_with("target") ||
-           path.ends_with(".vscode") {
+        if path.ends_with(".nyx")
+            || path.ends_with(".git")
+            || path.ends_with("target")
+            || path.ends_with(".vscode")
+        {
             continue;
         }
         if path.is_dir() {
-            _status(fixed_root, &root.join(path), index, unstaged, modified, staged);
+            _status(
+                fixed_root,
+                &root.join(path),
+                index,
+                unstaged,
+                modified,
+                staged,
+            );
         } else {
             let content = fs::read_to_string(path).unwrap();
             let content = append_object_header(content.as_bytes(), NyxObjectType::Blob);
             let hash = calculate_sha1(&content);
-            let path_str = path.strip_prefix(fixed_root).unwrap().to_str().unwrap(); 
+            let path_str = path.strip_prefix(fixed_root).unwrap().to_str().unwrap();
             match index.get_status(&hash, path_str) {
-                NyxFileState::Staged =>   staged.push(path_str),
+                NyxFileState::Staged => staged.push(path_str),
                 NyxFileState::Modified => modified.push(path_str),
                 NyxFileState::Unstaged => unstaged.push(path_str),
                 _ => (),

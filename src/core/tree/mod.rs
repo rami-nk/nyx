@@ -1,2 +1,2 @@
-pub mod tree;
 pub mod entry;
+pub mod tree;

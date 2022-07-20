@@ -1,6 +1,6 @@
+use colored::Colorize;
 use std::fmt::Display;
 use std::fs;
-use colored::Colorize;
 
 use crate::{generate_object, read_object_data, FILE_SYSTEM};
 
@@ -22,24 +22,24 @@ impl Commit {
             parent_hash = fs::read_to_string(head_path).unwrap();
         }
 
-        Self { 
+        Self {
             tree_hash: tree_hash.to_string(),
             parent_hash,
             hash: String::new(),
             message: message.to_string(),
         }
     }
-    
+
     pub fn from_head() -> Option<Self> {
         let head_path = FILE_SYSTEM.get_head_path();
         let mut hash = String::new();
         if head_path.exists() {
             hash = fs::read_to_string(head_path).unwrap();
         }
-        
+
         Commit::from_hash(&hash)
     }
-    
+
     pub fn get_content(&self) -> String {
         let mut content = format!("tree {}\n", self.tree_hash);
         if !self.parent_hash.is_empty() {
@@ -58,7 +58,7 @@ impl Commit {
         // TODO: Implement general read object to struct method (maybe in NyxFileSystem)
         let content = read_object_data(&hash).unwrap();
         let content: Vec<&str> = content.split("\n").filter(|e| !e.is_empty()).collect();
-        
+
         let message: String;
         let tree_hash: &str;
         let mut parent_hash = "";
@@ -73,22 +73,22 @@ impl Commit {
         } else {
             return None;
         }
-        
-        Some(Self { 
+
+        Some(Self {
             tree_hash: tree_hash.to_string(),
             parent_hash: parent_hash.to_string(),
             hash: hash.to_string(),
-            message
+            message,
         })
     }
-    
+
     pub fn write(&mut self) {
         self.hash = generate_object(self.get_content().as_bytes(), NyxObjectType::Commit);
 
         let head_path = FILE_SYSTEM.get_head_path();
         fs::write(head_path, &self.hash).unwrap();
     }
-    
+
     pub fn get_hash(&self) -> &str {
         &self.hash
     }
@@ -100,7 +100,11 @@ impl Commit {
 
 impl Display for Commit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let output = format!("hash {}\n\n    {}", self.hash.as_str().yellow(), self.message);
+        let output = format!(
+            "hash {}\n\n    {}",
+            self.hash.as_str().yellow(),
+            self.message
+        );
         write!(f, "{}", output)
     }
 }

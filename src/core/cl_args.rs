@@ -19,7 +19,7 @@ pub enum NyxCommand {
     /// Record changes to the repository
     Commit {
         #[clap(short, value_parser)]
-        message: String
+        message: String,
     },
     /// Display untracked/modified files
     Status,
