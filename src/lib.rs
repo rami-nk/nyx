@@ -21,7 +21,6 @@ lazy_static! {
     static ref FILE_SYSTEM: NyxFileSystem = NyxFileSystem::new();
 }
 
-// TODO: Encapsulate command matching logic and check if repo alredy setup
 pub fn run(cli: NyxCli) -> Result<(), NyxError> {
     if !FILE_SYSTEM.is_repository() {
         match &cli.command {
@@ -67,7 +66,7 @@ pub fn init() -> Result<(), NyxError> {
 }
 
 fn get_object_hash(path: &str) -> String {
-    let content = fs::read(PathBuf::from(path)).unwrap();
+    let content = fs::read(path).unwrap();
     let object_hash = generate_object(&content, NyxObjectType::Blob);
 
     return object_hash;
@@ -86,7 +85,7 @@ fn cat_file(hash: &str) -> Result<(), NyxError> {
 }
 
 fn read_object_data(hash: &str) -> Result<String, NyxError> {
-    let path: PathBuf = FILE_SYSTEM.get_object_path(&hash[..2], &hash[2..]);
+    let path = FILE_SYSTEM.get_object_path(&hash[..2], &hash[2..]);
     let content = fs::read(path)?;
     let index = &content.iter().position(|x| *x == 0).unwrap();
     let content = &content[*index..];
@@ -126,7 +125,7 @@ fn add_recursive(path: &str, index: &mut Index) {
 }
 
 fn ls_file() {
-    let path = [".nyx", "index"].iter().collect::<PathBuf>();
+    let path = FILE_SYSTEM.get_index_path();
     let content = fs::read_to_string(path).unwrap();
     println!("{content}");
 }
@@ -197,7 +196,7 @@ fn generate_object(content: &[u8], object_type: NyxObjectType) -> String {
     let content = append_object_header(content, object_type);
     let hash = calculate_sha1(&content);
 
-    let object_dir_path: PathBuf = FILE_SYSTEM.get_object_dir_path(&hash[..2]);
+    let object_dir_path = FILE_SYSTEM.get_object_dir_path(&hash[..2]);
 
     if !object_dir_path.exists() {
         fs::create_dir(&object_dir_path).unwrap();
