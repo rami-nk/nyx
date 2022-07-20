@@ -1,7 +1,5 @@
-use format_bytes::format_bytes;
-
-use crate::traits::Byte;
 use crate::NyxObjectType;
+use super::entry::TreeEntry;
 
 #[derive(Debug)]
 pub struct Tree {
@@ -39,26 +37,5 @@ impl Tree {
     
     pub fn set_hash(&mut self, hash: &str) {
         self.hash = hash.to_string();
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct TreeEntry {
-    entry_type: NyxObjectType,
-    hash: String,
-    path: String,
-}
-
-impl Byte for TreeEntry {
-    fn as_bytes(&self) -> Vec<u8> {
-        format_bytes!(b"{} {} {}", self.entry_type.to_string().to_lowercase().as_bytes(), self.hash.as_bytes(), self.path.as_bytes())
-    }
-}
-
-impl Byte for Vec<TreeEntry> {
-    fn as_bytes(&self) -> Vec<u8> {
-        let bytes_vec: Vec<Vec<u8>> = self.iter().map(|e| 
-            format_bytes!(b"{}\n", e.as_bytes())).collect();
-        (&bytes_vec.concat()[..]).to_vec()
     }
 }

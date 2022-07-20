@@ -1,28 +1,21 @@
 #![feature(drain_filter, fs_try_exists)]
 use format_bytes::format_bytes;
 use sha1::{Digest, Sha1};
-use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::{fs, str, env};
-use lazy_static::lazy_static;
+use lazy_static::{lazy_static, __Deref};
 
-pub mod cl_args;
-mod errors;
-mod index;
-mod object_type;
-mod tree;
-mod traits;
-mod commit;
-mod display_strings;
-mod file_system;
+pub mod core;
 
-use cl_args::{NyxCli, NyxCommand};
-use errors::NyxError;
-use index::{Index, NyxFileState};
-use object_type::NyxObjectType;
-use commit::Commit;
-use display_strings::DisplayStrings;
-use file_system::NyxFileSystem;
+use crate::core::file_system::NyxFileSystem;
+use crate::core::commit::*;
+use crate::core::index::index::*;
+use crate::core::index::file_state::NyxFileState;
+use crate::core::object_type::NyxObjectType;
+use crate::core::cl_args::NyxCli;
+use crate::core::errors::NyxError;
+use crate::core::cl_args::NyxCommand;
+use crate::core::display_strings::DisplayStrings;
 
 lazy_static! {
     static ref FILE_SYSTEM: NyxFileSystem = NyxFileSystem::new();

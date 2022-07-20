@@ -3,11 +3,14 @@ use std::{fs, vec};
 use std::io::Write;
 use std::path::PathBuf;
 
-use crate::errors::NyxError;
+use crate::core::errors::NyxError;
+use crate::core::object_type::NyxObjectType;
+use crate::core::tree::tree::Tree;
 use crate::{generate_object, FILE_SYSTEM};
-use crate::object_type::NyxObjectType;
-use crate::tree::Tree;
-use crate::traits::Byte;
+
+use super::file_state::NyxFileState;
+use super::entry::IndexEntry;
+use super::super::traits::Byte;
 
 pub struct Index {
     path: PathBuf,
@@ -144,47 +147,5 @@ impl Index {
                 None => NyxFileState::Unstaged,
             },
         }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum NyxFileState {
-    Invalid = 0,
-    Unstaged = 1,
-    Staged = 2,
-    Modified = 3,
-    Committed = 4,
-}
-
-// TODO: Search for safe approach
-impl NyxFileState {
-    fn from_u8(u: u8) -> NyxFileState {
-        match u {
-            1 => NyxFileState::Unstaged,
-            2 => NyxFileState::Staged,
-            3 => NyxFileState::Modified,
-            4 => NyxFileState::Committed,
-            _ => NyxFileState::Invalid,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-struct IndexEntry {
-    hash: String,
-    path: String,
-    state: NyxFileState,
-}
-
-impl Byte for IndexEntry {
-    fn as_bytes(&self) -> Vec<u8> {
-        let state = self.state as u8;
-        format_bytes!(b"{} {} {}", self.hash.as_bytes(), self.path.as_bytes(), state)
-    }
-}
-
-impl IndexEntry {
-    fn has_dir(&self) -> bool {
-        self.path.contains("/")
     }
 }
