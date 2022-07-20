@@ -1,7 +1,7 @@
 #![feature(drain_filter, fs_try_exists)]
 use format_bytes::format_bytes;
 use sha1::{Digest, Sha1};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::{fs, str, env};
 use lazy_static::{lazy_static, __Deref};
 
@@ -62,11 +62,7 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
 }
 
 pub fn init() -> Result<(), NyxError> {
-    let dir = Path::new(".nyx");
-
-    fs::create_dir(dir)?;
-    fs::create_dir(dir.join("objects"))?;
-
+    fs::create_dir_all(FILE_SYSTEM.get_objects_dir_path())?;
     Ok(())
 }
 
