@@ -1,5 +1,10 @@
 use std::env;
+use std::fs;
 use std::path::PathBuf;
+use format_bytes::format_bytes;
+use std::io::Write;
+
+use super::traits::Byte;
 
 pub struct NyxFileSystem {
     root_dir: PathBuf,
@@ -77,5 +82,19 @@ impl NyxFileSystem {
         self.root_dir
             .join(NyxFileSystem::nyx_dir())
             .join(NyxFileSystem::index_file())
+    }
+    
+    pub fn write_contents<T: Byte>(&self, content: &Vec<T>, path: &str) {
+        let mut file = fs::OpenOptions::new()
+            .create(true)
+            .write(true)
+            .open(path)
+            .unwrap();
+
+        let entries_bytes: Vec<Vec<u8>> = content.iter()
+            .map(|entry| format_bytes!(b"{}\n", entry.as_bytes()))
+            .collect();
+        let entries_bytes = entries_bytes.concat();
+        file.write_all(&entries_bytes).unwrap();
     }
 }

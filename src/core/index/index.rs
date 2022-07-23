@@ -1,5 +1,3 @@
-use format_bytes::format_bytes;
-use std::io::Write;
 use std::path::PathBuf;
 use std::{fs, vec};
 
@@ -56,7 +54,7 @@ impl Index {
             state: NyxFileState::Staged,
         });
 
-        self.write_content();
+        FILE_SYSTEM.write_contents(&self.entries, &self.path.to_str().unwrap());
         Ok(())
     }
 
@@ -72,23 +70,7 @@ impl Index {
         for mut entry in &mut self.entries {
             entry.state = NyxFileState::Committed;
         }
-        self.write_content();
-    }
-
-    fn write_content(&self) {
-        let mut file = fs::OpenOptions::new()
-            .create(true)
-            .write(true)
-            .open(&self.path)
-            .unwrap();
-
-        let entries_bytes: Vec<Vec<u8>> = self
-            .entries
-            .iter()
-            .map(|entry| format_bytes!(b"{}\n", entry.as_bytes()))
-            .collect();
-        let entries_bytes = entries_bytes.concat();
-        file.write_all(&entries_bytes).unwrap();
+        FILE_SYSTEM.write_contents(&self.entries, &self.path.to_str().unwrap());
     }
 
     fn write_tree_recursiv(index: &mut Vec<IndexEntry>) -> Tree {
