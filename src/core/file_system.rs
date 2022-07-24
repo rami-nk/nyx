@@ -50,18 +50,26 @@ impl NyxFileSystem {
         }
     }
 
+    /// Returns true if current directory is inside a nyx repository.
     pub fn is_repository(&self) -> bool {
         self.is_repo
     }
+    
+    /// Returns the path of the .nyx directory
+    pub fn get_repo_dir(&self) -> PathBuf {
+        self.root_dir.join(NyxFileSystem::nyx_dir())
+    }
 
+    /// Returns the tracked repository.
+    /// This path is the parent of the .nyx directory.
     pub fn get_root_dir(&self) -> &PathBuf {
         &self.root_dir
     }
 
+    /// Returns the path of the objects directory inside
+    /// of the .nyx directory.
     pub fn get_objects_dir_path(&self) -> PathBuf {
-        self.get_root_dir()
-            .join(NyxFileSystem::nyx_dir())
-            .join(NyxFileSystem::objects_dir())
+        self.get_repo_dir().join(NyxFileSystem::objects_dir())
     }
 
     pub fn get_object_path(&self, dir_name: &str, file_name: &str) -> PathBuf {
@@ -73,15 +81,11 @@ impl NyxFileSystem {
     }
 
     pub fn get_head_path(&self) -> PathBuf {
-        self.root_dir
-            .join(NyxFileSystem::nyx_dir())
-            .join(NyxFileSystem::head_file())
+        self.get_repo_dir().join(NyxFileSystem::head_file())
     }
 
     pub fn get_index_path(&self) -> PathBuf {
-        self.root_dir
-            .join(NyxFileSystem::nyx_dir())
-            .join(NyxFileSystem::index_file())
+        self.get_repo_dir().join(NyxFileSystem::index_file())
     }
     
     pub fn write_contents<T: Byte>(&self, content: &Vec<T>, path: &str) {
@@ -106,7 +110,7 @@ impl NyxFileSystem {
                 ignored.push(line.to_string());
             }
         }
-        ignored.push(String::from(".nyx"));
+        ignored.push(NyxFileSystem::nyx_dir());
         ignored
     }
     

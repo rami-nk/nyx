@@ -17,10 +17,7 @@ pub struct Commit {
 impl Commit {
     pub fn new(tree_hash: &str, message: &str) -> Self {
         let head_path = FILE_SYSTEM.get_head_path();
-        let mut parent_hash = String::new();
-        if head_path.exists() {
-            parent_hash = fs::read_to_string(head_path).unwrap();
-        }
+        let parent_hash = if head_path.exists() {fs::read_to_string(head_path).unwrap()} else {String::new()};
 
         Self {
             tree_hash: tree_hash.to_string(),
@@ -29,7 +26,7 @@ impl Commit {
             message: message.to_string(),
         }
     }
-
+    
     pub fn from_head() -> Option<Self> {
         let head_path = FILE_SYSTEM.get_head_path();
         let mut hash = String::new();
@@ -38,17 +35,6 @@ impl Commit {
         }
 
         Commit::from_hash(&hash)
-    }
-
-    pub fn get_content(&self) -> String {
-        let mut content = format!("tree {}\n", self.tree_hash);
-        if !self.parent_hash.is_empty() {
-            content = format!("{}parent {}\n", content, self.parent_hash);
-        }
-        if !self.message.is_empty() {
-            content = format!("{}{}", content, self.message);
-        }
-        content
     }
 
     pub fn from_hash(hash: &str) -> Option<Self> {
@@ -80,6 +66,17 @@ impl Commit {
             hash: hash.to_string(),
             message,
         })
+    }
+
+    pub fn get_content(&self) -> String {
+        let mut content = format!("tree {}\n", self.tree_hash);
+        if !self.parent_hash.is_empty() {
+            content = format!("{}parent {}\n", content, self.parent_hash);
+        }
+        if !self.message.is_empty() {
+            content = format!("{}{}", content, self.message);
+        }
+        content
     }
 
     pub fn write(&mut self) {
