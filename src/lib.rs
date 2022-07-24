@@ -40,7 +40,7 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
             _ => (),
         }
     }
-
+    
     match &cli.command {
         Some(command) => match command {
             NyxCommand::HashObject { path } => _ = hash_object(path)?,
@@ -55,7 +55,7 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
                 std::process::exit(1);
             }
         },
-        None => println!("Unknown command!"),
+        None => println!("Command not known! Type nyx --help for help"),
     };
     Ok(())
 }
@@ -107,11 +107,7 @@ fn add(paths: Vec<String>) -> Result<(), NyxError> {
 fn add_recursive(path: &str, index: &mut Index) {
     let path = PathBuf::from(path);
     if path.is_dir() {
-        if path.ends_with(".nyx")
-            || path.ends_with(".git")
-            || path.ends_with("target")
-            || path.ends_with(".vscode")
-        {
+        if FILE_SYSTEM.is_ignored(&path) {
             return;
         }
         for p in fs::read_dir(&path).unwrap() {
@@ -183,12 +179,7 @@ fn _status(
 ) {
     for path in fs::read_dir(root).unwrap() {
         let path = &path.unwrap().path();
-        // TODO: create .nyxigore file
-        if path.ends_with(".nyx")
-            || path.ends_with(".git")
-            || path.ends_with("target")
-            || path.ends_with(".vscode")
-        {
+        if FILE_SYSTEM.is_ignored(&path) {
             continue;
         }
         if path.is_dir() {
@@ -215,6 +206,7 @@ fn _status(
     }
 }
 
+// TODO: split in creation and writing
 fn generate_object(content: &[u8], object_type: NyxObjectType) -> String {
     let content = append_object_header(content, object_type);
     let hash = calculate_sha1(&content);

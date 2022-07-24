@@ -97,4 +97,26 @@ impl NyxFileSystem {
         let entries_bytes = entries_bytes.concat();
         file.write_all(&entries_bytes).unwrap();
     }
+    
+    fn get_ignored_files(&self) -> Vec<String> {
+        let nyx_ignore_content = fs::read_to_string(self.root_dir.join(".nyxignore"));
+        let mut ignored: Vec<String> = Vec::new();
+        if let Ok(lines) = nyx_ignore_content {
+            for line in lines.trim().split("\n").filter(|e| !e.is_empty()) {
+                ignored.push(line.to_string());
+            }
+        }
+        ignored.push(String::from(".nyx"));
+        ignored
+    }
+    
+    pub fn is_ignored(&self, path: &PathBuf) -> bool {
+        let ignored = self.get_ignored_files();
+        for ignore in ignored {
+            if path.ends_with(ignore) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
