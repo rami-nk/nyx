@@ -17,7 +17,7 @@ pub struct Commit {
 impl Commit {
 
     pub fn new(tree_hash: &str, message: &str) -> Self {
-        let parent_hash = Commit::read_parent_hash();
+        let parent_hash = Commit::read_current_commit_hash();
 
         Self {
             tree_hash: tree_hash.to_string(),
@@ -28,7 +28,7 @@ impl Commit {
     }
     
     pub fn from_head() -> Option<Self> {
-        Commit::from_hash(&Commit::read_parent_hash())
+        Commit::from_hash(&Commit::read_current_commit_hash())
     }
 
     pub fn from_hash(hash: &str) -> Option<Self> {
@@ -97,7 +97,7 @@ impl Commit {
         &self.parent_hash
     }
 
-    fn read_parent_hash() -> String {
+    fn read_current_commit_hash() -> String {
         let head_path = FILE_SYSTEM.get_head_path();
         if head_path.exists() {
             let head_content = fs::read_to_string(&head_path).unwrap();
