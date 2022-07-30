@@ -81,9 +81,20 @@ impl Commit {
 
     pub fn write(&mut self) {
         self.hash = generate_object(self.get_content().as_bytes(), NyxObjectType::Commit);
-
+        
+        // TODO: Move master to FILE_SYSTEM
+        let master_path = FILE_SYSTEM.get_refs_dir_path().join("master");
+        
+        // MASTER in refs erstellen
+        // In MASTER den hash reinschreiben
+        fs::write(master_path, &self.hash).unwrap();
+        
         let head_path = FILE_SYSTEM.get_head_path();
-        fs::write(head_path, &self.hash).unwrap();
+
+        // HEAD erstellen, falls nicht vorhanden (in .nyx/)
+        // Referenz auf MASTER in HEAD speichern
+        let head_content = format!("ref: refs/master");
+        fs::write(head_path, head_content).unwrap();
     }
 
     pub fn get_hash(&self) -> &str {
