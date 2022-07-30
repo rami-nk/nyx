@@ -20,6 +20,10 @@ impl NyxFileSystem {
         String::from("objects")
     }
 
+    fn refs_dir() -> String {
+        String::from("refs")
+    }
+
     fn head_file() -> String {
         String::from("HEAD")
     }
@@ -70,6 +74,12 @@ impl NyxFileSystem {
     /// of the .nyx directory.
     pub fn get_objects_dir_path(&self) -> PathBuf {
         self.get_repo_dir().join(NyxFileSystem::objects_dir())
+    }
+
+    /// Returns the path of the refs directory inside
+    /// of the .nyx directory.
+    pub fn get_refs_dir_path(&self) -> PathBuf {
+        self.get_repo_dir().join(NyxFileSystem::refs_dir())
     }
 
     pub fn get_object_path(&self, dir_name: &str, file_name: &str) -> PathBuf {

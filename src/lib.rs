@@ -62,6 +62,7 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
 
 pub fn init() -> Result<(), NyxError> {
     fs::create_dir_all(FILE_SYSTEM.get_objects_dir_path())?;
+    fs::create_dir_all(FILE_SYSTEM.get_refs_dir_path())?;
     Ok(())
 }
 
