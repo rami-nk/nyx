@@ -15,9 +15,9 @@ pub struct Commit {
 }
 
 impl Commit {
+
     pub fn new(tree_hash: &str, message: &str) -> Self {
-        let head_path = FILE_SYSTEM.get_head_path();
-        let parent_hash = if head_path.exists() {fs::read_to_string(head_path).unwrap()} else {String::new()};
+        let parent_hash = Commit::read_parent_hash();
 
         Self {
             tree_hash: tree_hash.to_string(),
@@ -28,13 +28,7 @@ impl Commit {
     }
     
     pub fn from_head() -> Option<Self> {
-        let head_path = FILE_SYSTEM.get_head_path();
-        let mut hash = String::new();
-        if head_path.exists() {
-            hash = fs::read_to_string(head_path).unwrap();
-        }
-
-        Commit::from_hash(&hash)
+        Commit::from_hash(&Commit::read_parent_hash())
     }
 
     pub fn from_hash(hash: &str) -> Option<Self> {
@@ -85,14 +79,12 @@ impl Commit {
         // TODO: Move master to FILE_SYSTEM
         let master_path = FILE_SYSTEM.get_refs_dir_path().join("master");
         
-        // MASTER in refs erstellen
-        // In MASTER den hash reinschreiben
+        // Create master with current hash in refs dir
         fs::write(master_path, &self.hash).unwrap();
         
         let head_path = FILE_SYSTEM.get_head_path();
 
-        // HEAD erstellen, falls nicht vorhanden (in .nyx/)
-        // Referenz auf MASTER in HEAD speichern
+        // Create HEAD with ref to master
         let head_content = format!("ref: refs/master");
         fs::write(head_path, head_content).unwrap();
     }
@@ -103,6 +95,20 @@ impl Commit {
 
     pub fn get_parent_hash(&self) -> &str {
         &self.parent_hash
+    }
+
+    fn read_parent_hash() -> String {
+        let head_path = FILE_SYSTEM.get_head_path();
+        if head_path.exists() {
+            let head_content = fs::read_to_string(&head_path).unwrap();
+            if head_content.contains("ref: ") {
+                fs::read_to_string(FILE_SYSTEM.get_refs_dir_path().join("master")).unwrap()
+            } else {
+                fs::read_to_string(&head_path).unwrap()
+            }
+        } else {
+            String::new()
+        }
     }
 }
 
