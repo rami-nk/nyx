@@ -25,7 +25,16 @@ pub enum NyxCommand {
     Status,
     /// Log commit history
     Log,
+    /// Switch between commits
+    Checkout {
+        #[clap(value_parser)]
+        hash: String,
+    },
+
+    // ##################################
     // ####### LOW-LEVEL COMMANDS #######
+    // ##################################
+    
     /// Compute object ID and creates a blob object from a file
     HashObject {
         #[clap(value_parser)]

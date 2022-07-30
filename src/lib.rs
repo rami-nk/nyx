@@ -3,7 +3,7 @@ use format_bytes::format_bytes;
 use lazy_static::{__Deref, lazy_static};
 use sha1::{Digest, Sha1};
 use std::path::PathBuf;
-use std::{env, fs, str};
+use std::{env, fs, str, process};
 
 pub mod core;
 
@@ -16,6 +16,7 @@ use crate::core::file_system::NyxFileSystem;
 use crate::core::index::file_state::NyxFileState;
 use crate::core::index::index::*;
 use crate::core::object_type::NyxObjectType;
+use crate::core::tree::tree::Tree;
 
 lazy_static! {
     static ref FILE_SYSTEM: NyxFileSystem = NyxFileSystem::new();
@@ -50,6 +51,7 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
             NyxCommand::Commit { message } => commit(message),
             NyxCommand::Status => status(),
             NyxCommand::Log => log(),
+            NyxCommand::Checkout { hash } => checkout(hash),
             NyxCommand::Init => {
                 eprintln!("Repository already initialized");
                 std::process::exit(1);
@@ -58,6 +60,29 @@ pub fn run(cli: NyxCli) -> Result<(), NyxError> {
         None => println!("Command not known! Type nyx --help for help"),
     };
     Ok(())
+}
+
+pub fn checkout(hash: &str) {
+    // TODO: Move error handling to Commit::from_hash ctor
+    if let Err(err) = read_object_data(hash) {
+        eprint!("{:?}", err);
+        process::exit(1);
+    }
+    
+    let commit = Commit::from_hash(hash).unwrap();
+    let tree = Tree::from_hash(commit.tree_hash());
+    
+    println!("{:#?}", tree);
+    
+    // 1. In head file den hash reinschreiben
+    fs::write(FILE_SYSTEM.get_head_path(), hash).unwrap();
+
+    // 2. Alle Dateien die nicht ignoriert werden löschen
+    for path in fs::read_dir(".") {
+
+    }
+
+    // 3. Rekursiv durch alle Trees gehen und dateien und ordner erstellen und schreiben
 }
 
 pub fn init() -> Result<(), NyxError> {

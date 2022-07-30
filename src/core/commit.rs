@@ -30,7 +30,7 @@ impl Commit {
     pub fn from_head() -> Option<Self> {
         Commit::from_hash(&Commit::read_current_commit_hash())
     }
-
+    
     pub fn from_hash(hash: &str) -> Option<Self> {
         if hash.is_empty() {
             return None;
@@ -109,6 +109,10 @@ impl Commit {
         } else {
             String::new()
         }
+    }
+
+    pub fn tree_hash(&self) -> &str {
+        self.tree_hash.as_ref()
     }
 }
 

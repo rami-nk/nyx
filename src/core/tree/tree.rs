@@ -1,5 +1,5 @@
 use super::entry::TreeEntry;
-use crate::NyxObjectType;
+use crate::{NyxObjectType, read_object_data};
 
 #[derive(Debug)]
 pub struct Tree {
@@ -17,6 +17,35 @@ impl Tree {
             trees: Vec::new(),
             path: String::new(),
         }
+    }
+    
+    pub fn from_hash(hash: &str) -> Self {
+        Tree::from_hash_recursive(hash, ".")
+    }
+    
+    fn from_hash_recursive(hash: &str, dir_name: &str) -> Tree {
+        let mut tree = Tree::new();
+        tree.set_hash(hash);
+        tree.set_path(dir_name);
+
+        let content = read_object_data(hash).unwrap();
+        println!("contnt : {:#?}", content);
+        
+        for line in content.lines() {
+            if line.is_empty() {
+                continue;
+            }
+            let line: Vec<&str> = line.split_whitespace().collect();
+            
+            if line[0].contains("blob") {
+                tree.add_blob(line[1], line[2]);
+            } else if line[0].contains("tree") {
+                println!("line : {:#?}", line);
+                let referenced_tree = Tree::from_hash_recursive(line[1], line[2]);
+                tree.add_tree(referenced_tree);
+            }
+        }
+        tree
     }
 
     fn add_entry(&mut self, hash: &str, name: &str, entry_type: NyxObjectType) {
@@ -38,5 +67,9 @@ impl Tree {
 
     pub fn set_hash(&mut self, hash: &str) {
         self.hash = hash.to_string();
+    }
+
+    pub fn set_path(&mut self, path: &str) {
+        self.path = path.to_string();
     }
 }
