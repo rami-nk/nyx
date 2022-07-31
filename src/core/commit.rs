@@ -2,9 +2,10 @@ use colored::Colorize;
 use std::fmt::Display;
 use std::fs;
 
-use crate::{generate_object, read_object_data, FILE_SYSTEM};
+use crate::FILE_SYSTEM;
 
 use super::object_type::NyxObjectType;
+use super::shared::{generate_object, read_object_data};
 
 #[derive(Debug)]
 pub struct Commit {

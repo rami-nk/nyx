@@ -3,8 +3,9 @@ use std::{fs, vec};
 
 use crate::core::errors::NyxError;
 use crate::core::object_type::NyxObjectType;
+use crate::core::shared::generate_object;
 use crate::core::tree::tree::Tree;
-use crate::{generate_object, FILE_SYSTEM};
+use crate::FILE_SYSTEM;
 
 use super::super::traits::Byte;
 use super::entry::IndexEntry;

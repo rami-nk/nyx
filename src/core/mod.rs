@@ -7,3 +7,5 @@ pub mod index;
 pub mod object_type;
 pub mod traits;
 pub mod tree;
+pub mod commands;
+pub mod shared;

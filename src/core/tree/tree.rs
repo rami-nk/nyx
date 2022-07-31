@@ -1,5 +1,5 @@
 use super::entry::TreeEntry;
-use crate::{NyxObjectType, read_object_data};
+use crate::{NyxObjectType, core::shared::read_object_data};
 
 #[derive(Debug)]
 pub struct Tree {
