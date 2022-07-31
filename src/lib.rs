@@ -9,7 +9,15 @@ use crate::core::cl_args::NyxCommand;
 use crate::core::errors::NyxError;
 use crate::core::file_system::NyxFileSystem;
 use crate::core::object_type::NyxObjectType;
-use crate::core::commands::*;
+use crate::core::commands::add::add;
+use crate::core::commands::init::init;
+use crate::core::commands::status::status;
+use crate::core::commands::commit::commit;
+use crate::core::commands::cat_file::cat_file;
+use crate::core::commands::checkout::checkout;
+use crate::core::commands::log::log;
+use crate::core::commands::ls_file::ls_file;
+use crate::core::commands::hash_object::hash_object;
 
 lazy_static! {
     static ref FILE_SYSTEM: NyxFileSystem = NyxFileSystem::new();

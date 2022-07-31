@@ -43,3 +43,10 @@ pub fn read_object_data(hash: &str) -> Result<String, NyxError> {
 
     Ok(content.to_string())
 }
+
+pub fn get_object_hash(path: &str) -> String {
+    let content = fs::read(path).unwrap();
+    let object_hash = generate_object(&content, NyxObjectType::Blob);
+
+    return object_hash;
+}
