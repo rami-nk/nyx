@@ -72,17 +72,46 @@ pub fn checkout(hash: &str) {
     let commit = Commit::from_hash(hash).unwrap();
     let tree = Tree::from_hash(commit.tree_hash());
     
-    println!("{:#?}", tree);
-    
-    // 1. In head file den hash reinschreiben
+    // 1. Write hash in HEAD
     fs::write(FILE_SYSTEM.get_head_path(), hash).unwrap();
 
-    // 2. Alle Dateien die nicht ignoriert werden löschen
-    for path in fs::read_dir(".") {
-
+    // 2. Remove all not ignored files
+    for entry in fs::read_dir(FILE_SYSTEM.get_root_dir()).unwrap() {
+        let entry = entry.unwrap();
+        if !FILE_SYSTEM.is_ignored(&entry.path()) {
+            if entry.path().is_dir() {
+                fs::remove_dir_all(entry.path()).unwrap();
+            } else {
+                fs::remove_file(entry.path()).unwrap();
+            }
+        }
     }
 
-    // 3. Rekursiv durch alle Trees gehen und dateien und ordner erstellen und schreiben
+    // 3. Resotre working tree recursively
+    restore_working_tree(&tree, FILE_SYSTEM.get_root_dir().to_str().unwrap());
+}
+
+fn restore_working_tree(tree: &Tree, path: &str) {
+    for entry in &tree.entries {
+        match entry.entry_type {
+            NyxObjectType::Blob => {
+                if !PathBuf::from(path).exists() {
+                    fs::create_dir_all(path).unwrap();
+                }
+                let path = PathBuf::from(path).join(&entry.path);
+                println!("Path: {:?}", path);
+                let content = read_object_data(&entry.hash).unwrap();
+                fs::write(path, content).unwrap();
+            },
+            NyxObjectType::Tree => {
+                let path = PathBuf::from(path).join(&entry.path);
+                let path = path.to_str().unwrap();
+                let tree = tree.get_tree_by_hash(&entry.hash).unwrap();
+                restore_working_tree(tree, path);
+            },
+            _ => (),
+        }
+    }
 }
 
 pub fn init() -> Result<(), NyxError> {
@@ -114,7 +143,7 @@ fn read_object_data(hash: &str) -> Result<String, NyxError> {
     let path = FILE_SYSTEM.get_object_path(&hash[..2], &hash[2..]);
     let content = fs::read(path)?;
     let index = &content.iter().position(|x| *x == 0).unwrap();
-    let content = &content[*index..];
+    let content = &content[*index+1..];
 
     let content = str::from_utf8(&content)?;
 

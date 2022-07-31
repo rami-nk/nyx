@@ -29,7 +29,6 @@ impl Tree {
         tree.set_path(dir_name);
 
         let content = read_object_data(hash).unwrap();
-        println!("contnt : {:#?}", content);
         
         for line in content.lines() {
             if line.is_empty() {
@@ -40,7 +39,6 @@ impl Tree {
             if line[0].contains("blob") {
                 tree.add_blob(line[1], line[2]);
             } else if line[0].contains("tree") {
-                println!("line : {:#?}", line);
                 let referenced_tree = Tree::from_hash_recursive(line[1], line[2]);
                 tree.add_tree(referenced_tree);
             }
@@ -71,5 +69,9 @@ impl Tree {
 
     pub fn set_path(&mut self, path: &str) {
         self.path = path.to_string();
+    }
+    
+    pub fn get_tree_by_hash(&self, hash: &str) -> Option<&Tree> {
+        self.trees.iter().find(|t| t.hash == hash)
     }
 }
