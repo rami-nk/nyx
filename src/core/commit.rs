@@ -114,6 +114,10 @@ impl Commit {
     pub fn tree_hash(&self) -> &str {
         self.tree_hash.as_ref()
     }
+
+    pub fn message(&self) -> &str {
+        self.message.as_ref()
+    }
 }
 
 impl Display for Commit {
