@@ -1,12 +1,12 @@
 // ##### HIGH-LEVEL #####
-pub mod init;
 pub mod add;
-pub mod commit;
-pub mod status;
 pub mod checkout;
+pub mod commit;
+pub mod init;
 pub mod log;
+pub mod status;
 
 // ##### LOW-LEVEL #####
+pub mod cat_file;
 pub mod hash_object;
 pub mod ls_file;
-pub mod cat_file;

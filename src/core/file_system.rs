@@ -1,8 +1,8 @@
+use format_bytes::format_bytes;
 use std::env;
 use std::fs;
-use std::path::PathBuf;
-use format_bytes::format_bytes;
 use std::io::Write;
+use std::path::PathBuf;
 
 use super::traits::Byte;
 
@@ -58,7 +58,7 @@ impl NyxFileSystem {
     pub fn is_repository(&self) -> bool {
         self.is_repo
     }
-    
+
     /// Returns the path of the .nyx directory
     pub fn get_repo_dir(&self) -> PathBuf {
         self.root_dir.join(NyxFileSystem::nyx_dir())
@@ -97,7 +97,7 @@ impl NyxFileSystem {
     pub fn get_index_path(&self) -> PathBuf {
         self.get_repo_dir().join(NyxFileSystem::index_file())
     }
-    
+
     pub fn write_contents<T: Byte>(&self, content: &Vec<T>, path: &str) {
         let mut file = fs::OpenOptions::new()
             .create(true)
@@ -105,13 +105,14 @@ impl NyxFileSystem {
             .open(path)
             .unwrap();
 
-        let entries_bytes: Vec<Vec<u8>> = content.iter()
+        let entries_bytes: Vec<Vec<u8>> = content
+            .iter()
             .map(|entry| format_bytes!(b"{}\n", entry.as_bytes()))
             .collect();
         let entries_bytes = entries_bytes.concat();
         file.write_all(&entries_bytes).unwrap();
     }
-    
+
     fn get_ignored_files(&self) -> Vec<String> {
         let nyx_ignore_content = fs::read_to_string(self.root_dir.join(".nyxignore"));
         let mut ignored: Vec<String> = Vec::new();
@@ -123,7 +124,7 @@ impl NyxFileSystem {
         ignored.push(NyxFileSystem::nyx_dir());
         ignored
     }
-    
+
     pub fn is_ignored(&self, path: &PathBuf) -> bool {
         let ignored = self.get_ignored_files();
         for ignore in ignored {

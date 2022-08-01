@@ -1,4 +1,4 @@
-use crate::core::{index::index::Index, commit::Commit};
+use crate::core::{commit::Commit, index::index::Index};
 
 pub fn commit(message: &str) {
     // TODO: Check for ustaged changes

@@ -1,12 +1,17 @@
-use std::{fs, process, path::PathBuf};
+use std::{fs, path::PathBuf, process};
 
-use crate::{FILE_SYSTEM, core::{shared::read_object_data, commit::Commit, tree::tree::Tree, object_type::NyxObjectType}};
+use crate::{
+    core::{
+        commit::Commit, object_type::NyxObjectType, shared::read_object_data, tree::tree::Tree,
+    },
+    FILE_SYSTEM,
+};
 
 pub fn checkout(hash: &str) {
     let mut hash = hash.to_string();
     let mut is_master = false;
     if hash.eq("master") {
-        hash =  fs::read_to_string(FILE_SYSTEM.get_refs_dir_path().join("master")).unwrap();
+        hash = fs::read_to_string(FILE_SYSTEM.get_refs_dir_path().join("master")).unwrap();
         is_master = true;
     }
 
@@ -15,10 +20,10 @@ pub fn checkout(hash: &str) {
         eprint!("{:?}", err);
         process::exit(1);
     }
-    
+
     let commit = Commit::from_hash(&hash).unwrap();
     let tree = Tree::from_hash(commit.tree_hash());
-    
+
     // Write hash in HEAD
     fs::write(FILE_SYSTEM.get_head_path(), hash).unwrap();
 
@@ -39,13 +44,13 @@ fn restore_working_tree_recursively(tree: &Tree, path: &str) {
                 let path = PathBuf::from(path).join(&entry.path);
                 let content = read_object_data(&entry.hash).unwrap();
                 fs::write(path, content).unwrap();
-            },
+            }
             NyxObjectType::Tree => {
                 let path = PathBuf::from(path).join(&entry.path);
                 let path = path.to_str().unwrap();
                 let tree = tree.get_tree_by_hash(&entry.hash).unwrap();
                 restore_working_tree_recursively(tree, path);
-            },
+            }
             _ => (),
         }
     }
@@ -67,7 +72,8 @@ fn remove_not_ignored_files() {
 
 fn print_info_text(is_master: bool, commit: &Commit) {
     if !is_master {
-        println!("\
+        println!(
+            "\
 You are in 'detached HEAD' state.
 
     Undo this operation with:
@@ -75,7 +81,9 @@ You are in 'detached HEAD' state.
         nyx checkout master
         
 HEAD is now at {} {} commit",
-        &commit.get_hash()[0..8], commit.message());
+            &commit.get_hash()[0..8],
+            commit.message()
+        );
         return;
     }
     println!("HEAD is now at master");

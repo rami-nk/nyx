@@ -1,10 +1,10 @@
-use std::fs;
 use format_bytes::format_bytes;
-use sha1::{Sha1, Digest};
+use sha1::{Digest, Sha1};
+use std::fs;
 
 use crate::FILE_SYSTEM;
 
-use super::{object_type::NyxObjectType, errors::NyxError};
+use super::{errors::NyxError, object_type::NyxObjectType};
 
 // TODO: split in creation and writing
 pub fn generate_object(content: &[u8], object_type: NyxObjectType) -> String {
@@ -37,7 +37,7 @@ pub fn read_object_data(hash: &str) -> Result<String, NyxError> {
     let path = FILE_SYSTEM.get_object_path(&hash[..2], &hash[2..]);
     let content = fs::read(path)?;
     let index = &content.iter().position(|x| *x == 0).unwrap();
-    let content = &content[*index+1..];
+    let content = &content[*index + 1..];
 
     let content = std::str::from_utf8(&content)?;
 

@@ -34,7 +34,6 @@ pub enum NyxCommand {
     // ##################################
     // ####### LOW-LEVEL COMMANDS #######
     // ##################################
-    
     /// Compute object ID and creates a blob object from a file
     HashObject {
         #[clap(value_parser)]

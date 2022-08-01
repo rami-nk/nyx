@@ -1,6 +1,9 @@
-use std::{path::PathBuf, fs};
+use std::{fs, path::PathBuf};
 
-use crate::{core::{index::index::Index, errors::NyxError, shared::get_object_hash}, FILE_SYSTEM};
+use crate::{
+    core::{errors::NyxError, index::index::Index, shared::get_object_hash},
+    FILE_SYSTEM,
+};
 
 pub fn add(paths: Vec<String>) -> Result<(), NyxError> {
     let mut index = Index::new();

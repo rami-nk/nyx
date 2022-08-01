@@ -16,7 +16,6 @@ pub struct Commit {
 }
 
 impl Commit {
-
     pub fn new(tree_hash: &str, message: &str) -> Self {
         let parent_hash = Commit::read_current_commit_hash();
 
@@ -27,11 +26,11 @@ impl Commit {
             message: message.to_string(),
         }
     }
-    
+
     pub fn from_head() -> Option<Self> {
         Commit::from_hash(&Commit::read_current_commit_hash())
     }
-    
+
     pub fn from_hash(hash: &str) -> Option<Self> {
         if hash.is_empty() {
             return None;
@@ -76,13 +75,13 @@ impl Commit {
 
     pub fn write(&mut self) {
         self.hash = generate_object(self.get_content().as_bytes(), NyxObjectType::Commit);
-        
+
         // TODO: Move master to FILE_SYSTEM
         let master_path = FILE_SYSTEM.get_refs_dir_path().join("master");
-        
+
         // Create master with current hash in refs dir
         fs::write(master_path, &self.hash).unwrap();
-        
+
         let head_path = FILE_SYSTEM.get_head_path();
 
         // Create HEAD with ref to master
@@ -124,7 +123,8 @@ impl Commit {
 impl Display for Commit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let output = format!(
-            "hash {}\n\n    {}",
+            "{} {}\n\n    {}",
+            "commit".yellow(),
             self.hash.as_str().yellow(),
             self.message
         );

@@ -1,6 +1,14 @@
-use std::{path::PathBuf, fs};
+use std::{fs, path::PathBuf};
 
-use crate::{FILE_SYSTEM, core::{index::{index::Index, file_state::NyxFileState}, display_strings::DisplayStrings, shared::{append_object_header, calculate_sha1}, object_type::NyxObjectType}};
+use crate::{
+    core::{
+        display_strings::DisplayStrings,
+        index::{file_state::NyxFileState, index::Index},
+        object_type::NyxObjectType,
+        shared::{append_object_header, calculate_sha1},
+    },
+    FILE_SYSTEM,
+};
 
 pub fn status() {
     // TODO: Error: Empty file is not displayed as untracked
